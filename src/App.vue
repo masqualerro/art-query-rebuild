@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView, useRouter } from 'vue-router'
 import {
   Disclosure,
   DisclosureButton,
@@ -11,6 +11,7 @@ import {
 } from '@headlessui/vue'
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
+import { ref, watch } from 'vue'
 
 const navItems = [
   { name: 'Dashboard', href: '/' },
@@ -18,6 +19,26 @@ const navItems = [
   { name: 'Harvard Art Museums', href: '/harvard' },
   { name: 'About', href: '/about' }
 ]
+
+const router = useRouter()
+const route = router.currentRoute
+const searchTerm = ref('')
+const apiSelection = ref('Harvard')
+const onSearch = () => {
+  if (apiSelection.value === 'Chicago') {
+    router.push({ name: 'chicago art institute', query: { searchTerm: searchTerm.value } })
+  } else {
+    router.push({ name: 'harvard art museums', query: { searchTerm: searchTerm.value } })
+  }
+}
+watch(route, (newRoute) => {
+  if (newRoute.name === 'harvard art museums') {
+    apiSelection.value = 'Harvard'
+  } else if (newRoute.name === 'chicago art institute') {
+    apiSelection.value = 'Chicago'
+  }
+  // Add more conditions here for other routes
+})
 </script>
 
 <template>
@@ -47,21 +68,36 @@ const navItems = [
           </div>
         </div>
         <div class="flex flex-1 justify-center px-2 lg:ml-6 lg:justify-end">
-          <div class="w-full max-w-lg lg:max-w-xs">
+          <form @submit.prevent="onSearch" class="w-full max-w-lg lg:max-w-sm">
             <label for="search" class="sr-only">Search</label>
             <div class="relative">
               <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <MagnifyingGlassIcon class="h-5 w-5 text-zinc-400" aria-hidden="true" />
               </div>
               <input
+                v-model="searchTerm"
                 id="search"
                 name="search"
-                class="block w-full rounded-md border-0 bg-zinc-700 py-1.5 pl-10 pr-3 text-zinc-300 placeholder:text-zinc-400 focus:bg-white focus:text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6"
+                class="border-0 block w-full rounded-md bg-zinc-700 m-1 py-1.5 pl-10 pr-32 text-zinc-300 placeholder:text-zinc-400 focus:bg-white focus:text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6"
                 placeholder="Search"
                 type="search"
+                autocomplete="off"
               />
+              <!-- block w-full rounded-md border-0 py-1.5 pl-7 pr-20 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 -->
+              <div class="absolute inset-y-0 right-0 flex items-center">
+                <label for="api" class="sr-only">Art Api</label>
+                <select
+                  v-model="apiSelection"
+                  id="api"
+                  name="api"
+                  class="h-full w-full rounded-md border-0 bg-transparent py-1.5 pl-2 pr-7 text-gray-400 outline-none sm:text-sm"
+                >
+                  <option>Harvard</option>
+                  <option>Chicago</option>
+                </select>
+              </div>
             </div>
-          </div>
+          </form>
         </div>
         <div class="flex lg:hidden">
           <!-- Mobile menu button -->
@@ -213,3 +249,10 @@ const navItems = [
     <RouterView />
   </div>
 </template>
+<style>
+/* html {
+  scroll-behavior: smooth;
+  --tw-bg-opacity: 1;
+  background-color: rgb(39 39 42 / var(--tw-bg-opacity));
+} */
+</style>

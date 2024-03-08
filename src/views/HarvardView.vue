@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import axios from 'axios'
-import { ref } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import type { harvardObject } from '@/interfaces/harvard.interfaces'
-const harvardData = ref<harvardObject[]>([])
-const harvardApi = import.meta.env.VITE_HARVARD_API_KEY
-const searchTerm = ref('expressionism')
+import { useRouter } from 'vue-router'
 
-const getHarvardData = async () => {
+const router = useRouter()
+const harvardApi = import.meta.env.VITE_HARVARD_API_KEY
+const searchTerm = computed(() => (router.currentRoute.value.query.searchTerm as string) || '')
+const hover: Record<string, boolean> = reactive({})
+const harvardData = ref<harvardObject[]>([])
+
+const getHarvardData = async (searchTerm: string) => {
   try {
     const response = await axios.get(`https://api.harvardartmuseums.org/object`, {
       params: {
         apikey: harvardApi,
-        // title: searchTerm.value,
-        // classification: 'Paintings',
-        q: searchTerm.value, // Search term
+        q: searchTerm, // Search term
         fields: 'title,dated,people,primaryimageurl,culture,colors,images',
         sort: 'rank', // Sort by relevance
-        // facets: ['classification', 'culture'], // Aggregations on classification and culture
-        size: 100, // Number of results,
+        size: 50, // Number of results,
         classification: 'Paintings'
       }
     })
@@ -31,7 +32,23 @@ const getHarvardData = async () => {
     console.error(error)
   }
 }
-getHarvardData()
+
+const gradientStyle = (item: harvardObject) => {
+  let gradient = 'linear-gradient(to right, '
+  gradient += item.colors
+    .map((color, index) => `${color.color} ${(index / (item.colors.length - 1)) * 100}%`)
+    .join(', ')
+  gradient += ')'
+  return { background: gradient }
+}
+
+watch(
+  searchTerm,
+  (newVal) => {
+    getHarvardData(newVal)
+  },
+  { immediate: true }
+)
 </script>
 <style scoped>
 .gallery {
@@ -48,36 +65,64 @@ img {
   object-fit: cover;
 }
 
-img.four-grid-cells {
-  grid-row: span 2 / auto;
+.wide-image {
   grid-column: span 2 / auto;
 }
-
-img.wide-image {
-  grid-column: span 2 / auto;
-}
-img.full-span {
+.full-span {
   grid-column: span 4 / auto;
 }
 </style>
 <template>
   <main>
-    <!-- input for searchTerm -->
-    <input class="text-black" type="text" v-model="searchTerm" />
-    <button @click="getHarvardData">Search</button>
     <div class="gallery">
-      <img
-        v-for="(item, index) in harvardData"
+      <div
+        v-for="item in harvardData"
         :key="item.id"
         :class="{
-          'four-grid-cells': index === 0,
           'wide-image': item.images[0].width > item.images[0].height,
           'full-span': item.images[0].width > 2 * item.images[0].height,
-          'rounded-lg': true
+          'rounded-lg, relative hover:cursor-help': true
         }"
-        :src="item.primaryimageurl"
-        alt=""
-      />
+        @mouseover="hover[item.id] = true"
+        @mouseleave="hover[item.id] = false"
+      >
+        <img
+          :src="item.primaryimageurl"
+          :alt="item.images[0].description"
+          :class="{
+            'opacity-50': hover[item.id]
+          }"
+        />
+        <ul
+          v-show="hover[item.id]"
+          class="absolute top-0 right-0 text-right text-sm text-red-600 bg-black w-full"
+        >
+          <li class="p-1 rounded-lg">
+            {{ item.title }}
+          </li>
+          <li class="p-1 rounded-lg">
+            {{
+              item.people && item.people.length > 0 ? item.people[0].displayname : 'Fallback value'
+            }}
+          </li>
+          <li class="p-1 rounded-lg">
+            {{ item.dated }}
+          </li>
+          <li class="p-1 rounded-lg">
+            {{ item.culture }}
+          </li>
+          <li class="p-1">
+            <p
+              v-for="(color, index) in item.colors"
+              :key="color.color"
+              :style="{ color: color.color, display: 'inline' }"
+            >
+              {{ color.color }}<span v-if="index < item.colors.length - 1">, </span>
+            </p>
+          </li>
+          <li :style="gradientStyle(item)" class="p-1"></li>
+        </ul>
+      </div>
     </div>
   </main>
 </template>

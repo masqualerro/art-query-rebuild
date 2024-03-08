@@ -31,6 +31,14 @@ export interface imageObject {
   width: number
 }
 
+export interface colorObject {
+  color: string
+  css3: string
+  hue: string
+  percent: number
+  spectrum: string
+}
+
 export interface harvardObject {
   id: number
   dated: string
@@ -40,5 +48,5 @@ export interface harvardObject {
   culture: string
   people: peopleObject[]
   images: imageObject[]
-  colors: Object[]
+  colors: colorObject[]
 }
