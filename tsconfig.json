@@ -9,6 +9,9 @@
     }
   ],
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": false,
+    "noImplicitAny": false
   }
 }

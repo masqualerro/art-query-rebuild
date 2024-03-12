@@ -45,7 +45,11 @@ export interface harvardObject {
   imagepermissionlevel: number
   primaryimageurl: string
   title: string
+  medium: string
   culture: string
+  classification: string
+  division: string
+  period: string
   people: peopleObject[]
   images: imageObject[]
   colors: colorObject[]

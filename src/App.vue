@@ -9,19 +9,36 @@ import {
   MenuItem,
   MenuItems
 } from '@headlessui/vue'
-import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useUserStore } from './stores/user'
+import WhiteGlyph from './components/icons/WhiteGlyph.vue'
 
 const navItems = [
-  { name: 'Dashboard', href: '/' },
+  { name: 'Collection', href: '/' },
   { name: 'Chicago Art Institute', href: '/chicago' },
   { name: 'Harvard Art Museums', href: '/harvard' },
   { name: 'About', href: '/about' }
 ]
 
+const userStore = useUserStore()
+console.log('userStore', userStore.user)
 const router = useRouter()
 const route = router.currentRoute
+
+onMounted(() => {
+  if (!userStore.user) {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      const noPassword = JSON.parse(storedUser)
+      delete noPassword.password
+      userStore.setUser(noPassword)
+    }
+  }
+  console.log('userStore', userStore.user)
+})
+
 const searchTerm = ref('')
 const apiSelection = ref('Harvard')
 const onSearch = () => {
@@ -47,11 +64,7 @@ watch(route, (newRoute) => {
       <div class="relative flex h-16 items-center justify-between">
         <div class="flex items-center px-2 lg:px-0">
           <div class="flex-shrink-0">
-            <img
-              class="h-8 w-auto"
-              src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-              alt="Your Company"
-            />
+            <WhiteGlyph class="h-8 w-8" />
           </div>
           <div class="hidden lg:ml-6 lg:block">
             <div class="flex space-x-4">
@@ -112,15 +125,6 @@ watch(route, (newRoute) => {
         </div>
         <div class="hidden lg:ml-4 lg:block">
           <div class="flex items-center">
-            <button
-              type="button"
-              class="relative flex-shrink-0 rounded-full bg-zinc-800 p-1 text-zinc-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800"
-            >
-              <span class="absolute -inset-1.5" />
-              <span class="sr-only">View notifications</span>
-              <BellIcon class="h-6 w-6" aria-hidden="true" />
-            </button>
-
             <!-- Profile dropdown -->
             <Menu as="div" class="relative ml-4 flex-shrink-0">
               <div>
@@ -129,10 +133,9 @@ watch(route, (newRoute) => {
                 >
                   <span class="absolute -inset-1.5" />
                   <span class="sr-only">Open user menu</span>
-                  <img
+                  <div
                     class="h-8 w-8 rounded-full"
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                    alt=""
+                    :style="{ backgroundColor: userStore.user ? userStore.user.color : '#fff' }"
                   />
                 </MenuButton>
               </div>
@@ -148,23 +151,13 @@ watch(route, (newRoute) => {
                   class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
                 >
                   <MenuItem v-slot="{ active }">
-                    <a
-                      href="#"
+                    <router-link
+                      :to="{ name: 'profile' }"
                       :class="[
                         active ? 'bg-zinc-100' : '',
                         'block px-4 py-2 text-sm text-zinc-700'
                       ]"
-                      >Your Profile</a
-                    >
-                  </MenuItem>
-                  <MenuItem v-slot="{ active }">
-                    <a
-                      href="#"
-                      :class="[
-                        active ? 'bg-zinc-100' : '',
-                        'block px-4 py-2 text-sm text-zinc-700'
-                      ]"
-                      >Settings</a
+                      >Your Profile</router-link
                     >
                   </MenuItem>
                   <MenuItem v-slot="{ active }">
@@ -202,39 +195,23 @@ watch(route, (newRoute) => {
       </div>
       <div class="border-t border-zinc-700 pb-3 pt-4">
         <div class="flex items-center px-5">
-          <div class="flex-shrink-0">
-            <img
-              class="h-10 w-10 rounded-full"
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-              alt=""
-            />
-          </div>
+          <div
+            class="h-10 w-10 rounded-full"
+            :style="{ backgroundColor: userStore.user ? userStore.user.color : '#fff' }"
+          />
           <div class="ml-3">
-            <div class="text-base font-medium text-white">Tom Cook</div>
-            <div class="text-sm font-medium text-zinc-400">tom@example.com</div>
+            <div class="text-base font-medium text-white">{{ userStore.user?.name }}</div>
+            <div class="text-sm font-medium text-zinc-400">{{ userStore.user?.email }}</div>
           </div>
-          <button
-            type="button"
-            class="relative ml-auto flex-shrink-0 rounded-full bg-zinc-800 p-1 text-zinc-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800"
-          >
-            <span class="absolute -inset-1.5" />
-            <span class="sr-only">View notifications</span>
-            <BellIcon class="h-6 w-6" aria-hidden="true" />
-          </button>
         </div>
         <div class="mt-3 space-y-1 px-2">
-          <DisclosureButton
-            as="a"
-            href="#"
-            class="block rounded-md px-3 py-2 text-base font-medium text-zinc-400 hover:bg-zinc-700 hover:text-white"
-            >Your Profile</DisclosureButton
-          >
-          <DisclosureButton
-            as="a"
-            href="#"
-            class="block rounded-md px-3 py-2 text-base font-medium text-zinc-400 hover:bg-zinc-700 hover:text-white"
-            >Settings</DisclosureButton
-          >
+          <DisclosureButton>
+            <router-link
+              :to="{ name: 'profile' }"
+              class="block rounded-md px-3 py-2 text-base font-medium text-zinc-400 hover:bg-zinc-700 hover:text-white"
+              >Your Profile</router-link
+            >
+          </DisclosureButton>
           <DisclosureButton
             as="a"
             href="#"
@@ -245,7 +222,7 @@ watch(route, (newRoute) => {
       </div>
     </DisclosurePanel>
   </Disclosure>
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
     <RouterView />
   </div>
 </template>
