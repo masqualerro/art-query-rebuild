@@ -53,8 +53,6 @@
 
 <script setup>
 import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue'
-import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/vue/24/outline'
-import { defineProps, defineEmits } from 'vue'
 
 const props = defineProps({
   open: Boolean,

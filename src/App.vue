@@ -16,7 +16,7 @@ import { useUserStore } from './stores/user'
 import WhiteGlyph from './components/icons/WhiteGlyph.vue'
 
 const navItems = [
-  { name: 'Collection', href: '/' },
+  { name: 'Collection', href: '/collection' },
   { name: 'Chicago Art Institute', href: '/chicago' },
   { name: 'Harvard Art Museums', href: '/harvard' },
   { name: 'About', href: '/about' }

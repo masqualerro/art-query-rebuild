@@ -226,9 +226,6 @@ img {
             class="-ml-0.5 h-5 w-5"
             aria-hidden="true"
           />
-          <span v-if="isSubmitting">Saving...</span>
-          <span v-else-if="artworkStore.chicago.includes(item.id)">Saved</span>
-          <span v-else>Save</span>
         </button>
         <button
           v-show="hover[item.id]"
