@@ -24,7 +24,6 @@ const navItems = [
 ]
 
 const userStore = useUserStore()
-console.log('userStore', userStore.user)
 const router = useRouter()
 const route = router.currentRoute
 const api = import.meta.env.VITE_APP_API
@@ -49,13 +48,13 @@ onMounted(() => {
     axios
       .get(`${api}/auth/is-token-expired`, config)
       .then((response) => {
-        if (response.data.expired) {
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
+        if (response.data) {
           localStorage.setItem('loggedIn', 'false')
           userLoggedIn.value = false
+          userStore.setLoggedIn(false)
         } else {
           localStorage.setItem('loggedIn', 'true')
+          userStore.setLoggedIn(true)
           userLoggedIn.value = true
         }
       })
@@ -63,9 +62,24 @@ onMounted(() => {
         console.error(error)
       })
   }
-
-  console.log('userStore', userStore.user)
 })
+
+watch(
+  () => userStore.loggedIn,
+  (newValue) => {
+    if (newValue) {
+      userLoggedIn.value = true
+      localStorage.setItem('loggedIn', 'true')
+    } else {
+      localStorage.getItem('loggedIn')
+      if (localStorage.getItem('loggedIn') === 'true') {
+        userLoggedIn.value = true
+      } else {
+        userLoggedIn.value = false
+      }
+    }
+  }
+)
 
 const searchTerm = ref('')
 const apiSelection = ref('Harvard')
@@ -202,7 +216,7 @@ watch(route, (newRoute) => {
                 </MenuItems>
               </transition>
             </Menu>
-            <div class="hidden lg:ml-6 lg:block">
+            <div v-else class="hidden lg:ml-6 lg:block">
               <div class="flex space-x-4">
                 <!-- Current: "bg-zinc-900 text-white", Default: "text-zinc-300 hover:bg-zinc-700 hover:text-white" -->
                 <router-link

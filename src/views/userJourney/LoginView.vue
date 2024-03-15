@@ -137,25 +137,20 @@ export default {
               age: response.data.user.age,
               color: response.data.user.color
             }
-            console.log(response)
             this.loading = false
             // Handle and response
             localStorage.setItem('token', response.data.access_token)
             localStorage.setItem('user', JSON.stringify(response.data.user))
-            // localStorage.setItem('loggedIn', true)
+            localStorage.setItem('loggedIn', 'true')
 
             // commit to pinia store
             const userStore = useUserStore()
             userStore.setUser(userObject)
             userStore.setToken(response.data.access_token)
             userStore.setLoggedIn(true)
-            console.log(userStore.accessToken)
-            console.log(userStore.user)
-            console.log('loggedIn:' + userStore.loggedIn)
-            console.log('user:' + userStore.user)
 
             // Redirect success user
-            this.$router.push('/')
+            // this.$router.push('/')
           })
           // Handle errors
           .catch((error) => {
@@ -168,7 +163,6 @@ export default {
   },
   created() {
     this.api = import.meta.env.VITE_APP_API
-    console.log(this.api)
   }
 }
 </script>

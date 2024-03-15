@@ -7,6 +7,7 @@ import type { harvardObject } from '@/interfaces/harvard.interfaces'
 import { useUserStore } from '@/stores/user'
 import { useArtworkStore } from '@/stores/artworks'
 import ZoomModal from '@/components/ZoomModal.vue'
+import BlackGlyph from '@/components/icons/BlackGlyph.vue'
 
 const userStore = useUserStore()
 const artworkStore = useArtworkStore()
@@ -18,7 +19,11 @@ onMounted(() => {
       const noPassword = JSON.parse(storedUser)
       delete noPassword.password
       userStore.setUser(noPassword)
+
+      mapArtworks()
     }
+  } else {
+    mapArtworks()
   }
 })
 
@@ -34,9 +39,10 @@ const isWideModal = ref(false)
 const modalOpen = ref(false)
 const imgUrl = ref('')
 const imgAlt = ref('')
+const loading = ref(true)
 
-// API CALLS
 const getHarvardData = async (searchTerm: string) => {
+  loading.value = true
   try {
     const response = await axios.get(`https://api.harvardartmuseums.org/object`, {
       params: {
@@ -54,10 +60,7 @@ const getHarvardData = async (searchTerm: string) => {
         object.primaryimageurl && object.images[0] && object.images[0].width >= 600
     )
     harvardData.value = objectsWithPrimaryImageUrl
-    console.log(harvardData.value)
-    for (const artwork of objectsWithPrimaryImageUrl) {
-      console.log(artwork.colors)
-    }
+    loading.value = false
   } catch (error) {
     console.error(error)
   }
@@ -89,7 +92,6 @@ const saveArtwork = (artwork: harvardObject) => {
       imageHeight: artwork.images[0].height
     }
   }
-  console.log(data.image)
   isSubmitting.value = true
   const token = localStorage.getItem('token')
 
@@ -100,7 +102,6 @@ const saveArtwork = (artwork: harvardObject) => {
   axios
     .post(`${api}/artworks/${userStore.user?.id}`, data, config)
     .then((response) => {
-      console.log(response)
       isSubmitting.value = false
       savedArtworks.value.push(artwork.id)
       useArtworkStore().addHarvardArtwork(artwork.id)
@@ -108,6 +109,24 @@ const saveArtwork = (artwork: harvardObject) => {
     .catch((error) => {
       console.error(error)
       isSubmitting.value = false
+    })
+}
+
+const mapArtworks = () => {
+  const token = localStorage.getItem('token')
+
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  }
+
+  axios
+    .get(`${api}/artworks/map/${userStore.user?.id}`, config)
+    .then((response) => {
+      savedArtworks.value = response.data
+      useArtworkStore().setHarvardArtworks(response.data)
+    })
+    .catch((error) => {
+      console.error(error)
     })
 }
 
@@ -183,7 +202,7 @@ img {
       :isWide="isWideModal"
       @close="toggleModal"
     />
-    <div class="gallery">
+    <div v-if="!loading" class="gallery">
       <div
         v-for="item in harvardData"
         :key="item.id"
@@ -285,6 +304,10 @@ img {
           <li :style="gradientStyle(item)" class="p-1"></li>
         </ul>
       </div>
+    </div>
+    <div v-else class="flex flex-col gap-y-4 items-center justify-center mt-10">
+      <BlackGlyph class="animate-bounce h-8 w-auto" />
+      <p class="text-sm italic">Fetching Art ...</p>
     </div>
   </main>
 </template>

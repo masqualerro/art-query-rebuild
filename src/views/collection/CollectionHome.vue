@@ -1,7 +1,6 @@
 <template>
   <div class="flex justify-between items-center">
     <TabNavigation :tabs="tabs"></TabNavigation>
-    <p>MY NAME JEFF</p>
   </div>
   <RouterView></RouterView>
 </template>

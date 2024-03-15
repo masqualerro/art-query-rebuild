@@ -1,6 +1,5 @@
 <template>
   <div class="about text-sm">
-    <h1 class="text-2xl font-semibold mb-6 text-center">About this app</h1>
     <section>
       <h2 class="text-xl font-semibold mb-2">Exploring Artworks</h2>
       <p class="mb-4">

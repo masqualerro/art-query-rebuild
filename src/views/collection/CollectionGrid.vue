@@ -184,7 +184,6 @@ const fetchCollection = () => {
   axios
     .get(`${api}/artworks/user/${userStore.user?.id}`, config)
     .then((response) => {
-      console.log(response)
       loading.value = false
       artworkData.value = response.data
     })
@@ -225,7 +224,6 @@ const deleteArtwork = (id: number) => {
   axios
     .delete(`${api}/artworks/${id}`, config)
     .then((response) => {
-      console.log(response)
       isSubmitting.value = false
     })
     .catch((error) => {

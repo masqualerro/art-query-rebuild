@@ -12,6 +12,12 @@ export const useArtworkStore = defineStore('artwork', {
     },
     addChicagoArtwork(id: number) {
       this.chicago.push(id)
+    },
+    setHarvardArtworks(artworks: number[]) {
+      this.harvard = artworks
+    },
+    setChicagoArtworks(artworks: number[]) {
+      this.chicago = artworks
     }
   }
 })

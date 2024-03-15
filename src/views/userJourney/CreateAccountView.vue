@@ -210,7 +210,6 @@ export default {
           this.loading = false
           this.error = false
           this.$router.push('/login')
-          console.log(response)
         })
         // Handle errors
         .catch((error) => {
@@ -224,7 +223,6 @@ export default {
   },
   created() {
     this.api = import.meta.env.VITE_APP_API
-    console.log(this.api)
   }
 }
 </script>

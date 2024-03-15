@@ -130,12 +130,18 @@ export default {
       api: null,
       error: false,
       loading: false,
-      userExists: false,
-      user: { id: 0, email: '', name: '', age: 0, color: '' } as userObject
+      userExists: false
     }
   },
   setup() {
-    const { user } = storeToRefs(useUserStore())
+    const { user: storeUser } = storeToRefs(useUserStore())
+    const user = reactive({
+      id: 0,
+      email: '',
+      name: '',
+      age: 0,
+      color: ''
+    })
     const router = useRouter()
     const route = useRoute()
     const state = reactive({
@@ -144,16 +150,16 @@ export default {
       age: 0,
       color: ''
     })
-    console.log(user)
-    if (user.value) {
-      state.email = user.value.email
-      state.name = user.value.name
-      state.age = user.value.age
-      state.color = user.value.color
+    if (storeUser.value) {
+      state.email = storeUser.value.email
+      state.name = storeUser.value.name
+      state.age = storeUser.value.age
+      state.color = storeUser.value.color
     } else {
       const localUserString = localStorage.getItem('user')
       if (localUserString !== null) {
         const localUser = JSON.parse(localUserString)
+        storeUser.value = localUser
         state.email = localUser.email
         state.name = localUser.name
         state.age = localUser.age
@@ -172,7 +178,8 @@ export default {
       state,
       v$,
       router,
-      route
+      route,
+      storeUser
     }
   },
   methods: {
@@ -185,16 +192,44 @@ export default {
       }
       this.v$.$validate()
       if (!this.v$.$error) {
-        // this.createAccount(data)
+        this.patchUser(data)
       } else {
         console.log(this.v$)
       }
+    },
+    patchUser(data: any) {
+      const token = localStorage.getItem('token')
+
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+
+      this.loading = true
+      axios
+        .patch(this.api + '/users/' + (this.storeUser ? this.storeUser.id : ''), data, config)
+        .then((response) => {
+          this.loading = false
+          this.error = false
+          const userObject = {
+            id: response.data.user.id,
+            name: response.data.user.name,
+            email: response.data.user.email,
+            age: response.data.user.age,
+            color: response.data.user.color
+          }
+          // Handle and response
+          localStorage.setItem('user', JSON.stringify(userObject))
+          useUserStore().setUser(userObject)
+        })
+        .catch((error) => {
+          this.loading = false
+          this.error = true
+          console.error(error)
+        })
     }
   },
   created() {
     this.api = import.meta.env.VITE_APP_API
-    console.log(this.api)
-    // this.user = useUserStore().user
   }
 }
 </script>

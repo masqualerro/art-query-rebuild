@@ -7,6 +7,7 @@ import { useUserStore } from '@/stores/user'
 import { useArtworkStore } from '@/stores/artworks'
 import ZoomModal from '@/components/ZoomModal.vue'
 import { HeartIcon, MagnifyingGlassPlusIcon } from '@heroicons/vue/24/outline'
+import BlackGlyph from '@/components/icons/BlackGlyph.vue'
 
 const userStore = useUserStore()
 const artworkStore = useArtworkStore()
@@ -32,6 +33,7 @@ const isWideModal = ref(false)
 const modalOpen = ref(false)
 const imgUrl = ref('')
 const imgAlt = ref('')
+const loading = ref(true)
 
 const chicagoData = ref<chicagoObject[]>([])
 const images = ref<imageObject>({
@@ -41,13 +43,14 @@ const images = ref<imageObject>({
 
 // API CALLS
 const getChicagoData = async (searchTerm: string) => {
+  loading.value = true
   try {
     const response = await axios.get(
       `https://api.artic.edu/api/v1/artworks/search?q=${searchTerm}&limit=50&&fields=id,title,image_id,artist_title,classification_titles,color,style_titles,artwork_type_title,medium_display,date_display,artist_display,thumbnail`
     )
     chicagoData.value = response.data.data.filter((item: chicagoObject) => item.thumbnail !== null)
     images.value = response.data.config
-    console.log(response.data)
+    loading.value = false
   } catch (error) {
     console.error(error)
   }
@@ -86,7 +89,6 @@ const saveArtwork = (artwork: chicagoObject) => {
   axios
     .post(`${api}/artworks/${userStore.user?.id}`, data, config)
     .then((response) => {
-      console.log(response)
       isSubmitting.value = false
       savedArtworks.value.push(artwork.id)
       useArtworkStore().addChicagoArtwork(artwork.id)
@@ -168,7 +170,7 @@ img {
       :isWide="isWideModal"
       @close="toggleModal"
     />
-    <div class="gallery">
+    <div v-if="!loading" class="gallery">
       <div
         v-for="item in chicagoData"
         :key="item.id"
@@ -272,6 +274,10 @@ img {
           ></li>
         </ul>
       </div>
+    </div>
+    <div v-else class="flex flex-col gap-y-4 items-center justify-center mt-10 min-h-full">
+      <BlackGlyph class="animate-bounce h-8 w-auto" />
+      <p class="text-sm italic">Fetching Art ...</p>
     </div>
   </main>
 </template>
