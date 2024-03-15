@@ -27,6 +27,7 @@
           }"
         />
         <button
+          @click="deleteArtwork(item.id)"
           v-show="hover[item.id]"
           type="button"
           class="absolute bottom-2 left-2 inline-flex items-center gap-x-1.5 rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
@@ -52,7 +53,7 @@
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          <TrashIcon />
+          <TrashIcon class="-ml-0.5 h-5 w-5" aria-hidden="true" />
         </button>
         <button
           v-show="hover[item.id]"
@@ -207,26 +208,33 @@ const toggleModal = (clickedUrl: string, clickedAlt: string, isWide: boolean) =>
     imgAlt.value = clickedAlt
   }
 }
-// const deleteArtwork = (id: number) => {
-//   isSubmitting.value = true
-//   const token = localStorage.getItem('token')
+const deleteArtwork = (id: number) => {
+  isSubmitting.value = true
+  const token = localStorage.getItem('token')
 
-//   const config = {
-//     headers: { Authorization: `Bearer ${token}` }
-//   }
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  }
 
-//   axios
-//     .delete(`${api}/artworks/${userStore.user?.id}`, data, config)
-//     .then((response) => {
-//       console.log(response)
-//       isSubmitting.value = false
-//       useArtworkStore().addHarvardArtwork(artwork.id)
-//     })
-//     .catch((error) => {
-//       console.error(error)
-//       isSubmitting.value = false
-//     })
-// }
+  // Store the original artworkData array
+  const originalArtworkData = artworkData.value
+
+  // Optimistically remove the artwork from the artworkData array
+  artworkData.value = artworkData.value.filter((artwork) => artwork.id !== id)
+
+  axios
+    .delete(`${api}/artworks/${id}`, config)
+    .then((response) => {
+      console.log(response)
+      isSubmitting.value = false
+    })
+    .catch((error) => {
+      console.error(error)
+      isSubmitting.value = false
+      // If the axios call fails, revert the artworkData array to its original state
+      artworkData.value = originalArtworkData
+    })
+}
 const gradientStyle = (item: artworkObject) => {
   let gradient = 'linear-gradient(to right, '
   gradient += item.colors.hex
@@ -242,5 +250,6 @@ function parseHSL(hsl: string) {
   }
   return { hue: '', saturation: '', lightness: '' }
 }
+
 fetchCollection()
 </script>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import axios from 'axios'
 import { RouterView, useRouter } from 'vue-router'
 import {
   Disclosure,
@@ -26,6 +27,8 @@ const userStore = useUserStore()
 console.log('userStore', userStore.user)
 const router = useRouter()
 const route = router.currentRoute
+const api = import.meta.env.VITE_APP_API
+const userLoggedIn = ref(false)
 
 onMounted(() => {
   if (!userStore.user) {
@@ -36,6 +39,31 @@ onMounted(() => {
       userStore.setUser(noPassword)
     }
   }
+  if (localStorage.getItem('token')) {
+    const token = localStorage.getItem('token')
+
+    const config = {
+      headers: { Authorization: `Bearer ${token}` }
+    }
+
+    axios
+      .get(`${api}/auth/is-token-expired`, config)
+      .then((response) => {
+        if (response.data.expired) {
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          localStorage.setItem('loggedIn', 'false')
+          userLoggedIn.value = false
+        } else {
+          localStorage.setItem('loggedIn', 'true')
+          userLoggedIn.value = true
+        }
+      })
+      .catch((error) => {
+        console.error(error)
+      })
+  }
+
   console.log('userStore', userStore.user)
 })
 
@@ -126,7 +154,7 @@ watch(route, (newRoute) => {
         <div class="hidden lg:ml-4 lg:block">
           <div class="flex items-center">
             <!-- Profile dropdown -->
-            <Menu as="div" class="relative ml-4 flex-shrink-0">
+            <Menu v-if="userLoggedIn" as="div" class="relative ml-4 flex-shrink-0">
               <div>
                 <MenuButton
                   class="relative flex rounded-full bg-zinc-800 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800"
@@ -139,6 +167,7 @@ watch(route, (newRoute) => {
                   />
                 </MenuButton>
               </div>
+
               <transition
                 enter-active-class="transition ease-out duration-100"
                 enter-from-class="transform opacity-0 scale-95"
@@ -173,6 +202,17 @@ watch(route, (newRoute) => {
                 </MenuItems>
               </transition>
             </Menu>
+            <div class="hidden lg:ml-6 lg:block">
+              <div class="flex space-x-4">
+                <!-- Current: "bg-zinc-900 text-white", Default: "text-zinc-300 hover:bg-zinc-700 hover:text-white" -->
+                <router-link
+                  :to="{ name: 'login' }"
+                  class="rounded-md px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white"
+                  active-class="bg-zinc-900 text-white"
+                  >Sign In</router-link
+                >
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -194,7 +234,7 @@ watch(route, (newRoute) => {
         </router-link>
       </div>
       <div class="border-t border-zinc-700 pb-3 pt-4">
-        <div class="flex items-center px-5">
+        <div v-if="userLoggedIn" class="flex items-center px-5">
           <div
             class="h-10 w-10 rounded-full"
             :style="{ backgroundColor: userStore.user ? userStore.user.color : '#fff' }"
@@ -204,6 +244,7 @@ watch(route, (newRoute) => {
             <div class="text-sm font-medium text-zinc-400">{{ userStore.user?.email }}</div>
           </div>
         </div>
+
         <div class="mt-3 space-y-1 px-2">
           <DisclosureButton>
             <router-link

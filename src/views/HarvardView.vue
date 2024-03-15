@@ -43,7 +43,7 @@ const getHarvardData = async (searchTerm: string) => {
         apikey: harvardApi,
         q: searchTerm, // Search term
         fields:
-          'title,dated,people,primaryimageurl,culture,colors,images,classification,medium,period,division,url',
+          'title,dated,people,primaryimageurl,culture,colors,color,images,classification,medium,period,division,url',
         sort: 'rank', // Sort by relevance
         size: 50, // Number of results,
         classification: 'Paintings'
@@ -55,6 +55,9 @@ const getHarvardData = async (searchTerm: string) => {
     )
     harvardData.value = objectsWithPrimaryImageUrl
     console.log(harvardData.value)
+    for (const artwork of objectsWithPrimaryImageUrl) {
+      console.log(artwork.colors)
+    }
   } catch (error) {
     console.error(error)
   }
