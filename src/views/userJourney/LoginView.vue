@@ -150,7 +150,7 @@ export default {
             userStore.setLoggedIn(true)
 
             // Redirect success user
-            // this.$router.push('/')
+            this.$router.push('/collection/display')
           })
           // Handle errors
           .catch((error) => {

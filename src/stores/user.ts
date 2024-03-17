@@ -9,14 +9,19 @@ export const useUserStore = defineStore('user', {
     }
   },
   actions: {
-    setUser(newUser: UserInfo) {
+    setUser(newUser: UserInfo | null) {
       this.user = newUser
     },
-    setToken(newToken: string) {
+    setToken(newToken: string | null) {
       this.accessToken = newToken
     },
     setLoggedIn(loggedIn: boolean) {
       this.loggedIn = loggedIn
+    },
+    signOut() {
+      this.setUser(null)
+      this.setToken(null)
+      this.setLoggedIn(false)
     }
   }
 })

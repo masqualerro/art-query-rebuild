@@ -7,7 +7,7 @@
       :isWide="isWideModal"
       @close="toggleModal"
     />
-    <div class="gallery">
+    <div v-if="artworkData.length > 0" class="gallery">
       <div
         v-for="item in artworkData"
         :key="item.id"
@@ -107,6 +107,12 @@
         </ul>
       </div>
     </div>
+    <div v-else>
+      <p class="text-sm italic">
+        No saved art yet. Save your favorite pieces to your collection by clicking the heart icon on
+        the either museum page.
+      </p>
+    </div>
   </div>
   <div v-else class="flex flex-col gap-y-4 items-center justify-center">
     <BlackGlyph class="animate-bounce h-8 w-auto" />
@@ -163,17 +169,6 @@ const modalOpen = ref(false)
 const imgUrl = ref('')
 const imgAlt = ref('')
 
-onMounted(() => {
-  if (!userStore.user) {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      const noPassword = JSON.parse(storedUser)
-      delete noPassword.password
-      userStore.setUser(noPassword)
-    }
-  }
-})
-
 const fetchCollection = () => {
   const token = localStorage.getItem('token')
 
@@ -223,7 +218,7 @@ const deleteArtwork = (id: number) => {
 
   axios
     .delete(`${api}/artworks/${id}`, config)
-    .then((response) => {
+    .then(() => {
       isSubmitting.value = false
     })
     .catch((error) => {

@@ -67,17 +67,9 @@ onMounted(() => {
 watch(
   () => userStore.loggedIn,
   (newValue) => {
-    if (newValue) {
-      userLoggedIn.value = true
-      localStorage.setItem('loggedIn', 'true')
-    } else {
-      localStorage.getItem('loggedIn')
-      if (localStorage.getItem('loggedIn') === 'true') {
-        userLoggedIn.value = true
-      } else {
-        userLoggedIn.value = false
-      }
-    }
+    console.log('watched', newValue)
+    userLoggedIn.value = newValue
+    localStorage.setItem('loggedIn', newValue ? 'true' : 'false')
   }
 )
 
@@ -168,7 +160,7 @@ watch(route, (newRoute) => {
         <div class="hidden lg:ml-4 lg:block">
           <div class="flex items-center">
             <!-- Profile dropdown -->
-            <Menu v-if="userLoggedIn" as="div" class="relative ml-4 flex-shrink-0">
+            <Menu v-show="userLoggedIn" as="div" class="relative ml-4 flex-shrink-0">
               <div>
                 <MenuButton
                   class="relative flex rounded-full bg-zinc-800 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800"
@@ -204,19 +196,19 @@ watch(route, (newRoute) => {
                     >
                   </MenuItem>
                   <MenuItem v-slot="{ active }">
-                    <a
-                      href="#"
+                    <router-link
+                      :to="{ name: 'sign out' }"
                       :class="[
                         active ? 'bg-zinc-100' : '',
                         'block px-4 py-2 text-sm text-zinc-700'
                       ]"
-                      >Sign out</a
+                      >Sign out</router-link
                     >
                   </MenuItem>
                 </MenuItems>
               </transition>
             </Menu>
-            <div v-else class="hidden lg:ml-6 lg:block">
+            <div v-show="!userLoggedIn" class="hidden lg:ml-6 lg:block">
               <div class="flex space-x-4">
                 <!-- Current: "bg-zinc-900 text-white", Default: "text-zinc-300 hover:bg-zinc-700 hover:text-white" -->
                 <router-link
@@ -232,23 +224,22 @@ watch(route, (newRoute) => {
       </div>
     </div>
 
-    <DisclosurePanel class="lg:hidden">
+    <DisclosurePanel v-slot="{ close }" class="lg:hidden">
       <div class="space-y-1 px-2 pb-3 pt-2">
         <!-- Current: "bg-zinc-900 text-white", Default: "text-zinc-300 hover:bg-zinc-700 hover:text-white" -->
         <router-link
+          @click="close"
           v-for="item in navItems"
           :key="item.name"
           :to="item.href"
           class="block rounded-md px-3 py-2 text-base font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white"
           active-class="bg-zinc-900 text-white"
         >
-          <DisclosureButton>
-            {{ item.name }}
-          </DisclosureButton>
+          {{ item.name }}
         </router-link>
       </div>
-      <div class="border-t border-zinc-700 pb-3 pt-4">
-        <div v-if="userLoggedIn" class="flex items-center px-5">
+      <div v-show="userLoggedIn" class="border-t border-zinc-700 pb-3 pt-4">
+        <div class="flex items-center px-5">
           <div
             class="h-10 w-10 rounded-full"
             :style="{ backgroundColor: userStore.user ? userStore.user.color : '#fff' }"
@@ -260,20 +251,32 @@ watch(route, (newRoute) => {
         </div>
 
         <div class="mt-3 space-y-1 px-2">
-          <DisclosureButton>
-            <router-link
-              :to="{ name: 'profile' }"
-              class="block rounded-md px-3 py-2 text-base font-medium text-zinc-400 hover:bg-zinc-700 hover:text-white"
-              >Your Profile</router-link
-            >
-          </DisclosureButton>
-          <DisclosureButton
-            as="a"
-            href="#"
+          <router-link
+            @click="close"
+            :to="{ name: 'profile' }"
             class="block rounded-md px-3 py-2 text-base font-medium text-zinc-400 hover:bg-zinc-700 hover:text-white"
-            >Sign out</DisclosureButton
+            active-class="bg-zinc-900 text-white"
+            >Your Profile</router-link
+          >
+          <router-link
+            @click="close"
+            :to="{ name: 'sign out' }"
+            class="block rounded-md px-3 py-2 text-base font-medium text-zinc-400 hover:bg-zinc-700 hover:text-white"
+            active-class="bg-zinc-900 text-white"
+            >Sign out</router-link
           >
         </div>
+      </div>
+      <div v-show="!userLoggedIn" class="space-y-1 px-2 pb-3 pt-4 border-t border-zinc-700">
+        <!-- Current: "bg-zinc-900 text-white", Default: "text-zinc-300 hover:bg-zinc-700 hover:text-white" -->
+        <router-link
+          @click="close"
+          :to="{ name: 'login' }"
+          class="block rounded-md px-3 py-2 text-base font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white"
+          active-class="bg-zinc-900 text-white"
+        >
+          Sign In
+        </router-link>
       </div>
     </DisclosurePanel>
   </Disclosure>
@@ -281,10 +284,4 @@ watch(route, (newRoute) => {
     <RouterView />
   </div>
 </template>
-<style>
-/* html {
-  scroll-behavior: smooth;
-  --tw-bg-opacity: 1;
-  background-color: rgb(39 39 42 / var(--tw-bg-opacity));
-} */
-</style>
+<style></style>
