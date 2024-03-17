@@ -157,7 +157,7 @@ img {
     grid-template-columns: repeat(1, 1fr);
   }
   .wide-image {
-    grid-column: span 2 / auto;
+    grid-column: span 1 / auto;
   }
 }
 </style>
