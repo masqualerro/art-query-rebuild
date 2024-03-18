@@ -67,7 +67,6 @@ onMounted(() => {
 watch(
   () => userStore.loggedIn,
   (newValue) => {
-    console.log('watched', newValue)
     userLoggedIn.value = newValue
     localStorage.setItem('loggedIn', newValue ? 'true' : 'false')
   }

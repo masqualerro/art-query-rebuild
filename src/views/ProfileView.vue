@@ -118,7 +118,6 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/user'
-import type { userObject } from '@/interfaces/user.interface'
 import BlackGlyph from '@/components/icons/BlackGlyph.vue'
 
 export default {
@@ -135,13 +134,6 @@ export default {
   },
   setup() {
     const { user: storeUser } = storeToRefs(useUserStore())
-    const user = reactive({
-      id: 0,
-      email: '',
-      name: '',
-      age: 0,
-      color: ''
-    })
     const router = useRouter()
     const route = useRoute()
     const state = reactive({

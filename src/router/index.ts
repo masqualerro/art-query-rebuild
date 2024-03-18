@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 import LoginView from '@/views/userJourney/LoginView.vue'
 import CollectionHome from '@/views/collection/CollectionHome.vue'
 import type { RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
@@ -56,7 +55,6 @@ function signOutGuard(
   from: RouteLocationNormalized,
   next: NavigationGuardNext
 ) {
-  console.log('Before entering /signout route')
   // Perform sign out actions here
   const userStore = useUserStore()
   userStore.signOut()

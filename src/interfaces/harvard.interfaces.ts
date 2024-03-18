@@ -54,3 +54,12 @@ export interface harvardObject {
   images: imageObject[]
   colors: colorObject[]
 }
+
+export interface paginationObject {
+  next: string
+  page: number
+  pages: number
+  responsetime: string
+  totalrecords: number
+  totalrecordsperquery: number
+}

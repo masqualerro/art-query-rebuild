@@ -34,6 +34,10 @@ const modalOpen = ref(false)
 const imgUrl = ref('')
 const imgAlt = ref('')
 const loading = ref(true)
+const loadingNext = ref(false)
+const imageLoadCount = ref(0)
+const imageErrorCount = ref(0)
+const currentPage = ref(1)
 
 const chicagoData = ref<chicagoObject[]>([])
 const images = ref<imageObject>({
@@ -43,14 +47,35 @@ const images = ref<imageObject>({
 
 // API CALLS
 const getChicagoData = async (searchTerm: string) => {
+  imageLoadCount.value = 0
+  imageErrorCount.value = 0
   loading.value = true
   try {
     const response = await axios.get(
-      `https://api.artic.edu/api/v1/artworks/search?q=${searchTerm}&limit=50&&fields=id,title,image_id,artist_title,classification_titles,color,style_titles,artwork_type_title,medium_display,date_display,artist_display,thumbnail`
+      `https://api.artic.edu/api/v1/artworks/search?q=${searchTerm}&limit=50&page=1&fields=id,title,image_id,artist_title,classification_titles,color,style_titles,artwork_type_title,medium_display,date_display,artist_display,thumbnail`
     )
     chicagoData.value = response.data.data.filter((item: chicagoObject) => item.thumbnail !== null)
     images.value = response.data.config
-    loading.value = false
+    currentPage.value = 1
+    // loading.value = false
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const loadMoreChicagoData = async (searchTerm: string) => {
+  loadingNext.value = true
+  try {
+    currentPage.value++ // Increment the page number
+    const response = await axios.get(
+      `https://api.artic.edu/api/v1/artworks/search?q=${searchTerm}&limit=50&page=${currentPage.value}&fields=id,title,image_id,artist_title,classification_titles,color,style_titles,artwork_type_title,medium_display,date_display,artist_display,thumbnail`
+    )
+    const newChicagoData = response.data.data.filter(
+      (item: chicagoObject) => item.thumbnail !== null
+    )
+    chicagoData.value = [...chicagoData.value, ...newChicagoData] // Append the new data
+    images.value = response.data.config
+    loadingNext.value = false
   } catch (error) {
     console.error(error)
   }
@@ -88,20 +113,39 @@ const saveArtwork = (artwork: chicagoObject) => {
 
   axios
     .post(`${api}/artworks/${userStore.user?.id}`, data, config)
-    .then((response) => {
+    .then(() => {
       isSubmitting.value = false
       savedArtworks.value.push(artwork.id)
       useArtworkStore().addChicagoArtwork(artwork.id)
     })
     .catch((error) => {
-      console.error(error)
-      isSubmitting.value = false
+      if (error.response.status === 401) {
+        router.push('/login')
+        isSubmitting.value = false
+      } else {
+        console.error(error)
+        isSubmitting.value = false
+      }
     })
 }
 
 // METHODS AND UTILS
+
+const handleImageLoad = () => {
+  imageLoadCount.value++
+  checkAllImagesLoaded()
+}
+
 const handleImageError = (event: any) => {
+  imageErrorCount.value++
   event.target.style.display = 'none'
+  checkAllImagesLoaded()
+}
+
+const checkAllImagesLoaded = () => {
+  if (imageLoadCount.value + imageErrorCount.value === chicagoData.value.length) {
+    loading.value = false
+  }
 }
 
 const createHSLColor = (color: colorObject) => {
@@ -170,112 +214,127 @@ img {
       :isWide="isWideModal"
       @close="toggleModal"
     />
-    <div v-if="!loading" class="gallery">
-      <div
-        v-for="item in chicagoData"
-        :key="item.id"
-        :class="{
-          'wide-image': item.thumbnail.width > item.thumbnail.height,
-          'full-span': item.thumbnail.width > 2 * item.thumbnail.height,
-          'rounded-lg, relative hover:cursor-help': true
-        }"
-        @mouseover="hover[item.id] = true"
-        @mouseleave="hover[item.id] = false"
-      >
-        <img
-          :src="images.iiif_url + '/' + item.image_id + '/full/843,/0/default.jpg'"
+    <div v-show="!loading">
+      <div class="gallery">
+        <div
+          v-for="item in chicagoData"
+          :key="item.id"
           :class="{
-            'opacity-50': hover[item.id]
+            'wide-image': item.thumbnail.width > item.thumbnail.height,
+            'full-span': item.thumbnail.width > 2 * item.thumbnail.height,
+            'rounded-lg, relative hover:cursor-help rounded-lg overflow-hidden': true
           }"
-          @error="handleImageError"
-          :alt="item.thumbnail.alt_text"
-        />
-        <button
-          v-show="hover[item.id]"
-          @click="saveArtwork(item)"
-          type="button"
-          class="absolute bottom-2 left-2 inline-flex items-center gap-x-1.5 rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+          @mouseover="hover[item.id] = true"
+          @mouseleave="hover[item.id] = false"
         >
-          <svg
-            v-if="isSubmitting"
-            class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <HeartIcon
-            v-else
+          <img
+            :src="images.iiif_url + '/' + item.image_id + '/full/843,/0/default.jpg'"
             :class="{
-              'text-red-600 fill-red-600':
-                artworkStore.chicago.includes(item.id) || savedArtworks.includes(item.id),
-              'text-white':
-                !artworkStore.chicago.includes(item.id) || !savedArtworks.includes(item.id)
+              'opacity-50': hover[item.id]
             }"
-            class="-ml-0.5 h-5 w-5"
-            aria-hidden="true"
+            @load="handleImageLoad"
+            @error="handleImageError"
+            :alt="item.thumbnail.alt_text"
           />
-        </button>
+          <button
+            v-show="hover[item.id]"
+            @click="saveArtwork(item)"
+            type="button"
+            class="absolute bottom-2 left-2 inline-flex items-center gap-x-1.5 rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+          >
+            <svg
+              v-if="isSubmitting"
+              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <HeartIcon
+              v-else
+              :class="{
+                'text-red-600 fill-red-600':
+                  artworkStore.chicago.includes(item.id) || savedArtworks.includes(item.id),
+                'text-white':
+                  !artworkStore.chicago.includes(item.id) || !savedArtworks.includes(item.id)
+              }"
+              class="-ml-0.5 h-5 w-5"
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            v-show="hover[item.id]"
+            @click="
+              toggleModal(
+                images.iiif_url + '/' + item.image_id + '/full/843,/0/default.jpg',
+                item.thumbnail.alt_text,
+                item.thumbnail.width > item.thumbnail.height
+              )
+            "
+            type="button"
+            class="absolute bottom-2 right-2 inline-flex items-center rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+          >
+            <MagnifyingGlassPlusIcon class="-ml-0.5 h-5 w-5" aria-hidden="true" />
+          </button>
+          <ul
+            v-show="hover[item.id]"
+            class="absolute top-0 right-0 text-right text-sm text-red-600 bg-black w-full"
+          >
+            <li class="p-1 rounded-lg">
+              {{ item.title }}
+            </li>
+            <li class="p-1 rounded-lg">
+              {{ item.artist_title }}
+            </li>
+            <li class="p-1 rounded-lg">
+              {{ item.date_display }}
+            </li>
+            <li class="p-1 rounded-lg">
+              {{ item.medium_display }}
+            </li>
+            <li class="p-1" v-if="item.color">
+              <p :style="{ color: createHSLColor(item.color) }">
+                {{ `hue: ${item.color.h}, saturation: ${item.color.s}, lightness ${item.color.l}` }}
+              </p>
+            </li>
+            <li class="p-1" v-else>
+              <p class="text-white">No color data available</p>
+            </li>
+            <li
+              :style="{ background: createHSLColor(item.color) }"
+              class="p-1"
+              v-if="item.color"
+            ></li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex items-center justify-center mt-4">
         <button
-          v-show="hover[item.id]"
-          @click="
-            toggleModal(
-              images.iiif_url + '/' + item.image_id + '/full/843,/0/default.jpg',
-              item.thumbnail.alt_text,
-              item.thumbnail.width > item.thumbnail.height
-            )
-          "
+          @click="loadMoreChicagoData(searchTerm)"
           type="button"
-          class="absolute bottom-2 right-2 inline-flex items-center rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+          class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
         >
-          <MagnifyingGlassPlusIcon class="-ml-0.5 h-5 w-5" aria-hidden="true" />
+          Load More
         </button>
-        <ul
-          v-show="hover[item.id]"
-          class="absolute top-0 right-0 text-right text-sm text-red-600 bg-black w-full"
-        >
-          <li class="p-1 rounded-lg">
-            {{ item.title }}
-          </li>
-          <li class="p-1 rounded-lg">
-            {{ item.artist_title }}
-          </li>
-          <li class="p-1 rounded-lg">
-            {{ item.date_display }}
-          </li>
-          <li class="p-1 rounded-lg">
-            {{ item.medium_display }}
-          </li>
-          <li class="p-1" v-if="item.color">
-            <p :style="{ color: createHSLColor(item.color) }">
-              {{ `hue: ${item.color.h}, saturation: ${item.color.s}, lightness ${item.color.l}` }}
-            </p>
-          </li>
-          <li class="p-1" v-else>
-            <p class="text-white">No color data available</p>
-          </li>
-          <li
-            :style="{ background: createHSLColor(item.color) }"
-            class="p-1"
-            v-if="item.color"
-          ></li>
-        </ul>
       </div>
     </div>
-    <div v-else class="flex flex-col gap-y-4 items-center justify-center mt-10 min-h-full">
+    <div
+      v-show="loading"
+      class="flex flex-col gap-y-4 items-center justify-center mt-10 min-h-full"
+    >
       <BlackGlyph class="animate-bounce h-8 w-auto" />
       <p class="text-sm italic">Fetching Art ...</p>
     </div>

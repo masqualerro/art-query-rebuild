@@ -1,11 +1,7 @@
 <template>
   <div class="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-sm">
-      <img
-        class="mx-auto h-10 w-auto"
-        src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-        alt="Your Company"
-      />
+      <BlackGlyph class="mx-auto h-12 w-auto" />
       <h2 class="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
         Sign in to your account
       </h2>
@@ -57,7 +53,29 @@
             type="submit"
             class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
-            Sign in
+            <svg
+              v-if="loading"
+              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span v-if="loading">Signing In ...</span>
+            <span v-else>Sign in</span>
           </button>
         </div>
       </form>
@@ -86,6 +104,7 @@ import useValidate from '@vuelidate/core'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import axios from 'axios'
+import BlackGlyph from '@/components/icons/BlackGlyph.vue'
 
 export default {
   data() {
@@ -94,6 +113,9 @@ export default {
       error: false,
       loading: false
     }
+  },
+  components: {
+    BlackGlyph
   },
   setup() {
     const router = useRouter()
@@ -137,7 +159,6 @@ export default {
               age: response.data.user.age,
               color: response.data.user.color
             }
-            this.loading = false
             // Handle and response
             localStorage.setItem('token', response.data.access_token)
             localStorage.setItem('user', JSON.stringify(response.data.user))
@@ -151,6 +172,7 @@ export default {
 
             // Redirect success user
             this.$router.push('/collection/display')
+            this.loading = false
           })
           // Handle errors
           .catch((error) => {

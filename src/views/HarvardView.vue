@@ -3,7 +3,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { HeartIcon, MagnifyingGlassPlusIcon } from '@heroicons/vue/24/outline'
-import type { harvardObject } from '@/interfaces/harvard.interfaces'
+import type { harvardObject, paginationObject } from '@/interfaces/harvard.interfaces'
 import { useUserStore } from '@/stores/user'
 import { useArtworkStore } from '@/stores/artworks'
 import ZoomModal from '@/components/ZoomModal.vue'
@@ -33,6 +33,8 @@ const harvardApi = import.meta.env.VITE_HARVARD_API_KEY
 const searchTerm = computed(() => (router.currentRoute.value.query.searchTerm as string) || '')
 const hover: Record<string, boolean> = reactive({})
 const harvardData = ref<harvardObject[]>([])
+const imageLoadCount = ref(0)
+const imageErrorCount = ref(0)
 const isSubmitting = ref(false)
 const savedArtworks = ref<number[]>([])
 const isWideModal = ref(false)
@@ -40,8 +42,13 @@ const modalOpen = ref(false)
 const imgUrl = ref('')
 const imgAlt = ref('')
 const loading = ref(true)
+const loadingNext = ref(false)
+const pagination = ref({} as paginationObject)
+let nextUrl = ref('')
 
 const getHarvardData = async (searchTerm: string) => {
+  imageLoadCount.value = 0
+  imageErrorCount.value = 0
   loading.value = true
   try {
     const response = await axios.get(`https://api.harvardartmuseums.org/object`, {
@@ -60,9 +67,30 @@ const getHarvardData = async (searchTerm: string) => {
         object.primaryimageurl && object.images[0] && object.images[0].width >= 600
     )
     harvardData.value = objectsWithPrimaryImageUrl
-    loading.value = false
+    pagination.value = response.data.info
+    nextUrl.value = response.data.info.next
+    // loading.value = false
   } catch (error) {
     console.error(error)
+  }
+}
+
+const loadMoreHarvardData = async () => {
+  if (nextUrl.value) {
+    loadingNext.value = true
+    try {
+      const response = await axios.get(nextUrl.value)
+      const objectsWithPrimaryImageUrl = response.data.records.filter(
+        (object: harvardObject) =>
+          object.primaryimageurl && object.images[0] && object.images[0].width >= 600
+      )
+      harvardData.value = [...harvardData.value, ...objectsWithPrimaryImageUrl] // Append the new data
+      pagination.value = response.data.info
+      nextUrl.value = response.data.info.next // Update the "next" URL
+      loadingNext.value = false
+    } catch (error) {
+      console.error(error)
+    }
   }
 }
 
@@ -101,14 +129,19 @@ const saveArtwork = (artwork: harvardObject) => {
 
   axios
     .post(`${api}/artworks/${userStore.user?.id}`, data, config)
-    .then((response) => {
+    .then(() => {
       isSubmitting.value = false
       savedArtworks.value.push(artwork.id)
       useArtworkStore().addHarvardArtwork(artwork.id)
     })
     .catch((error) => {
-      console.error(error)
-      isSubmitting.value = false
+      if (error.response.status === 401) {
+        router.push('/login')
+        isSubmitting.value = false
+      } else {
+        console.error(error)
+        isSubmitting.value = false
+      }
     })
 }
 
@@ -128,6 +161,22 @@ const mapArtworks = () => {
     .catch((error) => {
       console.error(error)
     })
+}
+
+const handleImageLoad = () => {
+  imageLoadCount.value++
+  checkAllImagesLoaded()
+}
+
+const handleImageError = () => {
+  imageErrorCount.value++
+  checkAllImagesLoaded()
+}
+
+const checkAllImagesLoaded = () => {
+  if (imageLoadCount.value + imageErrorCount.value === harvardData.value.length) {
+    loading.value = false
+  }
 }
 
 // METHODS AND UTILS
@@ -202,110 +251,126 @@ img {
       :isWide="isWideModal"
       @close="toggleModal"
     />
-    <div v-if="!loading" class="gallery">
-      <div
-        v-for="item in harvardData"
-        :key="item.id"
-        :class="{
-          'wide-image': item.images[0].width > item.images[0].height,
-          'full-span': item.images[0].width > 2 * item.images[0].height,
-          'rounded-lg, relative hover:cursor-help rounded-lg overflow-hidden': true
-        }"
-        @mouseover="hover[item.id] = true"
-        @mouseleave="hover[item.id] = false"
-      >
-        <img
-          :src="item.primaryimageurl"
-          :alt="item.images[0].alttext"
+    <div v-show="!loading">
+      <div class="gallery">
+        <div
+          v-for="item in harvardData"
+          :key="item.id"
           :class="{
-            'opacity-50': hover[item.id]
+            'wide-image': item.images[0].width > item.images[0].height,
+            'full-span': item.images[0].width > 2 * item.images[0].height,
+            'rounded-lg, relative hover:cursor-help rounded-lg overflow-hidden': true
           }"
-        />
-        <button
-          v-show="hover[item.id]"
-          @click="saveArtwork(item)"
-          type="button"
-          class="absolute bottom-2 left-2 inline-flex items-center gap-x-1.5 rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+          @mouseover="hover[item.id] = true"
+          @mouseleave="hover[item.id] = false"
         >
-          <svg
-            v-if="isSubmitting"
-            class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <HeartIcon
-            v-else
+          <img
+            :src="item.primaryimageurl"
+            :alt="item.images[0].alttext"
             :class="{
-              'text-red-600 fill-red-600':
-                artworkStore.harvard.includes(item.id) || savedArtworks.includes(item.id),
-              'text-white':
-                !artworkStore.harvard.includes(item.id) || !savedArtworks.includes(item.id)
+              'opacity-50': hover[item.id]
             }"
-            class="-ml-0.5 h-5 w-5"
-            aria-hidden="true"
+            @load="handleImageLoad"
+            @error="handleImageError"
           />
-        </button>
-        <button
-          v-show="hover[item.id]"
-          @click="
-            toggleModal(
-              item.primaryimageurl,
-              item.images[0].alttext,
-              item.images[0].width > item.images[0].height
-            )
-          "
-          type="button"
-          class="absolute bottom-2 right-2 inline-flex items-center rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
-        >
-          <MagnifyingGlassPlusIcon class="-ml-0.5 h-5 w-5" aria-hidden="true" />
-        </button>
-        <ul
-          v-show="hover[item.id]"
-          class="absolute top-0 right-0 text-right text-sm text-red-600 bg-black w-full"
-        >
-          <li class="p-1 rounded-lg">
-            {{ `${item.title}, ${item.dated}` }}
-          </li>
-          <li class="p-1 rounded-lg">
-            {{
-              item.people && item.people.length > 0 ? item.people[0].displayname : 'Fallback value'
-            }}
-          </li>
-          <li class="p-1 rounded-lg">
-            {{ item.medium }}
-          </li>
-          <li class="p-1 rounded-lg">
-            {{ item.culture }}
-          </li>
-          <li class="p-1">
-            <p
-              v-for="(color, index) in item.colors"
-              :key="color.color"
-              :style="{ color: color.color, display: 'inline' }"
+          <button
+            v-show="hover[item.id]"
+            @click="saveArtwork(item)"
+            type="button"
+            class="absolute bottom-2 left-2 inline-flex items-center gap-x-1.5 rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+          >
+            <svg
+              v-if="isSubmitting"
+              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
             >
-              {{ color.color }}<span v-if="index < item.colors.length - 1">, </span>
-            </p>
-          </li>
-          <li :style="gradientStyle(item)" class="p-1"></li>
-        </ul>
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <HeartIcon
+              v-else
+              :class="{
+                'text-red-600 fill-red-600':
+                  artworkStore.harvard.includes(item.id) || savedArtworks.includes(item.id),
+                'text-white':
+                  !artworkStore.harvard.includes(item.id) || !savedArtworks.includes(item.id)
+              }"
+              class="-ml-0.5 h-5 w-5"
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            v-show="hover[item.id]"
+            @click="
+              toggleModal(
+                item.primaryimageurl,
+                item.images[0].alttext,
+                item.images[0].width > item.images[0].height
+              )
+            "
+            type="button"
+            class="absolute bottom-2 right-2 inline-flex items-center rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+          >
+            <MagnifyingGlassPlusIcon class="-ml-0.5 h-5 w-5" aria-hidden="true" />
+          </button>
+          <ul
+            v-show="hover[item.id]"
+            class="absolute top-0 right-0 text-right text-sm text-red-600 bg-black w-full"
+          >
+            <li class="p-1 rounded-lg">
+              {{ `${item.title}, ${item.dated}` }}
+            </li>
+            <li class="p-1 rounded-lg">
+              {{
+                item.people && item.people.length > 0
+                  ? item.people[0].displayname
+                  : 'Fallback value'
+              }}
+            </li>
+            <li class="p-1 rounded-lg">
+              {{ item.medium }}
+            </li>
+            <li class="p-1 rounded-lg">
+              {{ item.culture }}
+            </li>
+            <li class="p-1">
+              <p
+                v-for="(color, index) in item.colors"
+                :key="color.color"
+                :style="{ color: color.color, display: 'inline' }"
+              >
+                {{ color.color }}<span v-if="index < item.colors.length - 1">, </span>
+              </p>
+            </li>
+            <li :style="gradientStyle(item)" class="p-1"></li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex items-center justify-center mt-4">
+        <button
+          @click="loadMoreHarvardData"
+          type="button"
+          class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+        >
+          Load More
+        </button>
       </div>
     </div>
-    <div v-else class="flex flex-col gap-y-4 items-center justify-center mt-10">
+
+    <div v-show="loading" class="flex flex-col gap-y-4 items-center justify-center mt-10">
       <BlackGlyph class="animate-bounce h-8 w-auto" />
       <p class="text-sm italic">Fetching Art ...</p>
     </div>

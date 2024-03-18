@@ -150,7 +150,7 @@ img {
 }
 </style>
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, reactive } from 'vue'
 import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 import type { artworkObject } from '@/interfaces/artworks.interfaces'
