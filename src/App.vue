@@ -92,7 +92,7 @@ watch(route, (newRoute) => {
 </script>
 
 <template>
-  <Disclosure as="nav" class="bg-zinc-800" v-slot="{ open }">
+  <Disclosure as="nav" class="bg-zinc-800 sticky top-0 z-10" v-slot="{ open }">
     <div class="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
       <div class="relative flex h-16 items-center justify-between">
         <div class="flex items-center px-2 lg:px-0">
@@ -191,7 +191,7 @@ watch(route, (newRoute) => {
                         active ? 'bg-zinc-100' : '',
                         'block px-4 py-2 text-sm text-zinc-700'
                       ]"
-                      >Your Profile</router-link
+                      >Edit Profile</router-link
                     >
                   </MenuItem>
                   <MenuItem v-slot="{ active }">
@@ -255,7 +255,7 @@ watch(route, (newRoute) => {
             :to="{ name: 'profile' }"
             class="block rounded-md px-3 py-2 text-base font-medium text-zinc-400 hover:bg-zinc-700 hover:text-white"
             active-class="bg-zinc-900 text-white"
-            >Your Profile</router-link
+            >Edit Profile</router-link
           >
           <router-link
             @click="close"
