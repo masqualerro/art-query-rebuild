@@ -56,7 +56,7 @@ export interface harvardObject {
 }
 
 export interface paginationObject {
-  next: string
+  next?: string
   page: number
   pages: number
   responsetime: string
