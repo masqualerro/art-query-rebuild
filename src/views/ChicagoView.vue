@@ -122,7 +122,7 @@ const saveArtwork = (artwork: chicagoObject) => {
     },
     culture: extractCulture(artwork.artist_display, artwork.title)
   }
-  isSubmitting.value = true
+  // isSubmitting.value = true
   const token = localStorage.getItem('token')
 
   const config = {
@@ -170,11 +170,20 @@ const extractCulture = (str: string, title: string) => {
       foundNationality = 'Mexican'
       return foundNationality
     }
+    if (str.includes('United States') || str.includes('Navajo') || str.includes('Osage')) {
+      foundNationality = 'American'
+      return foundNationality
+    } else if (str.includes('Mexico')) {
+      foundNationality = 'Mexican'
+      return foundNationality
+    }
     const words = str.toLowerCase().split(/\s+/) // Split input string into words
     for (let word of words) {
       for (let nationality of nationalities) {
         if (nationality.toLowerCase().includes(word)) {
           foundNationality = nationality
+          console.log(str)
+          console.log(foundNationality)
           break // Exit the loop if a match is found
         }
       }
