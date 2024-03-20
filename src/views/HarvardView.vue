@@ -107,6 +107,9 @@ const loadMoreHarvardData = async () => {
 }
 
 const saveArtwork = (artwork: harvardObject) => {
+  let classificationArray = [artwork.period, artwork.division, artwork.classification].filter(
+    Boolean
+  )
   const data = {
     museum_id: 1,
     artwork_id: artwork.id,
@@ -119,11 +122,7 @@ const saveArtwork = (artwork: harvardObject) => {
       hex: artwork.colors,
       hsl: null
     }),
-    classification: JSON.stringify({
-      period: artwork.period,
-      division: artwork.division,
-      type: artwork.classification
-    }),
+    styles: JSON.stringify(classificationArray),
     image: {
       artwork_id: artwork.id,
       imageUrl: artwork.primaryimageurl,

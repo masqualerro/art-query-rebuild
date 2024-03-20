@@ -62,6 +62,7 @@ onMounted(() => {
         console.error(error)
       })
   }
+  document.addEventListener('mousewheel', () => {}, { passive: true })
 })
 
 watch(

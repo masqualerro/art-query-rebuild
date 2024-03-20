@@ -6,7 +6,7 @@
 import { use } from 'echarts/core'
 import { PieChart } from 'echarts/charts'
 import { LegendComponent, ToolboxComponent } from 'echarts/components'
-import { SVGRenderer, CanvasRenderer } from 'echarts/renderers'
+import { SVGRenderer } from 'echarts/renderers'
 import VChart, { THEME_KEY } from 'vue-echarts'
 import { ref, provide } from 'vue'
 import colorInsightData from '@/views/collection/mockData.js/colorInsight'
@@ -50,7 +50,7 @@ const option = ref({
         })),
       color: colorInsightData.insights
         .filter((insight) => insight.hue !== 'White')
-        .map((insight, index) => {
+        .map((insight) => {
           const colors = insight.hex_colors
           return {
             type: 'linear',

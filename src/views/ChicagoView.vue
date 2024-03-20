@@ -74,6 +74,7 @@ const getChicagoData = async (searchTerm: string) => {
     if (chicagoData.value.length === 0) {
       loading.value = false
     }
+    console.log(response)
   } catch (error) {
     console.error(error)
   }
@@ -111,8 +112,9 @@ const saveArtwork = (artwork: chicagoObject) => {
       hex: null,
       hsl: createHSLColor(artwork.color)
     }),
-    classification: JSON.stringify(artwork.classification_titles),
-    styles: JSON.stringify(artwork.style_titles),
+    styles: JSON.stringify(
+      [...artwork.classification_titles, ...artwork.style_titles].filter(Boolean)
+    ),
     image: {
       artwork_id: artwork.id,
       imageUrl: images.value.iiif_url + '/' + artwork.image_id + '/full/843,/0/default.jpg',
@@ -175,6 +177,9 @@ const extractCulture = (str: string, title: string) => {
       return foundNationality
     } else if (str.includes('Mexico')) {
       foundNationality = 'Mexican'
+      return foundNationality
+    } else if (str.includes('Netherlandish')) {
+      foundNationality = 'Flemish'
       return foundNationality
     }
     const words = str.toLowerCase().split(/\s+/) // Split input string into words
