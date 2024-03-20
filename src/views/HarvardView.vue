@@ -54,9 +54,12 @@ const getHarvardData = async (searchTerm: string) => {
   imageLoadCount.value = 0
   imageErrorCount.value = 0
   loading.value = true
-  setTimeout(() => {
-    loading.value = false
-  }, 3000)
+  if (searchTerm !== '') {
+    setTimeout(() => {
+      loading.value = false
+    }, 3000)
+  }
+
   try {
     const response = await axios.get(`https://api.harvardartmuseums.org/object`, {
       params: {

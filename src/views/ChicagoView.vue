@@ -47,6 +47,7 @@ const imageLoadCount = ref(0)
 const imageErrorCount = ref(0)
 const currentPage = ref(1)
 const totalPages = ref(0) // Initialize totalPages to 0
+import nationalities from '@/json/nationalities.json'
 
 const chicagoData = ref<chicagoObject[]>([])
 const images = ref<imageObject>({
@@ -59,6 +60,9 @@ const getChicagoData = async (searchTerm: string) => {
   imageLoadCount.value = 0
   imageErrorCount.value = 0
   loading.value = true
+  setTimeout(() => {
+    loading.value = false
+  }, 3000)
   try {
     const response = await axios.get(
       `https://api.artic.edu/api/v1/artworks/search?q=${searchTerm}&limit=50&page=1&fields=id,title,image_id,artist_title,classification_titles,color,style_titles,artwork_type_title,medium_display,date_display,artist_display,thumbnail`
@@ -70,6 +74,7 @@ const getChicagoData = async (searchTerm: string) => {
     if (chicagoData.value.length === 0) {
       loading.value = false
     }
+    console.log(response)
   } catch (error) {
     console.error(error)
   }
@@ -99,7 +104,7 @@ const saveArtwork = (artwork: chicagoObject) => {
     museum_id: 1,
     artwork_id: artwork.id,
     title: artwork.title,
-    artist: artwork.artist_title,
+    artist: artwork.artist_title ? artwork.artist_title : 'Unknown Artist',
     date: artwork.date_display,
     medium: artwork.medium_display,
     artwork_type: artwork.artwork_type_title,
@@ -115,7 +120,8 @@ const saveArtwork = (artwork: chicagoObject) => {
       imageAlt: (artwork.thumbnail.alt_text || artwork.title).substring(0, 300),
       imageWidth: artwork.thumbnail.width,
       imageHeight: artwork.thumbnail.height
-    }
+    },
+    culture: extractCulture(artwork.artist_display)
   }
   isSubmitting.value = true
   const token = localStorage.getItem('token')
@@ -140,6 +146,37 @@ const saveArtwork = (artwork: chicagoObject) => {
         isSubmitting.value = false
       }
     })
+}
+
+const extractCulture = (str: string) => {
+  str = str.replace(/\n/g, ' ')
+  let foundNationality = ''
+
+  // First, check if the entire string matches any nationality
+  for (let nationality of nationalities) {
+    if (str.includes(nationality) || nationality.includes(str) || nationality.startsWith(str)) {
+      foundNationality = nationality
+      break // Exit the loop if a match is found
+    }
+  }
+
+  // If no match is found, then split the string into words and check each word against nationalities
+  if (!foundNationality) {
+    const words = str.toLowerCase().split(/\s+/) // Split input string into words
+    for (let word of words) {
+      for (let nationality of nationalities) {
+        if (nationality.toLowerCase().includes(word)) {
+          foundNationality = nationality
+          break // Exit the loop if a match is found
+        }
+      }
+      if (foundNationality) {
+        break // Exit the loop if a match is found
+      }
+    }
+  }
+
+  return foundNationality
 }
 
 const mapArtworks = () => {
@@ -180,6 +217,7 @@ const checkAllImagesLoaded = () => {
 }
 
 const createHSLColor = (color: colorObject) => {
+  if (!color) return '#fff'
   return `hsl(${color.h}, ${color.s}%, ${color.l}%)`
 }
 
@@ -348,11 +386,7 @@ img {
               <li class="p-1" v-else>
                 <p class="text-white">No color data available</p>
               </li>
-              <li
-                :style="{ background: createHSLColor(item.color) }"
-                class="p-1"
-                v-if="item.color"
-              ></li>
+              <li :style="{ color: createHSLColor(item.color) }" class="p-1" v-if="item.color"></li>
             </ul>
           </div>
         </div>

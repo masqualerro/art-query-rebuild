@@ -6,4 +6,5 @@ export interface colorInsight {
 export interface colorResponse {
   insights: colorInsight[]
   total: number
+  aiInsight: string
 }

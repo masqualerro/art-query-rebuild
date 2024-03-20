@@ -107,10 +107,24 @@
         </ul>
       </div>
     </div>
-    <div v-else>
-      <p class="text-sm italic">
-        No saved art yet. Save your favorite pieces to your collection by clicking the heart icon on
-        the either museum page.
+    <div v-else class="flex flex-col items-center justify-center h-52">
+      <CubeTransparentIcon class="h-8 w-auto text-gray-400" />
+      <p class="text-center text-sm font-semibold mt-4">
+        You don't have any saved art yet.
+        <br />
+        <br />
+        <router-link class="text-indigo-600 hover:text-indigo-500" :to="`/chicago`"
+          >Browse the Chicago Art Institute API</router-link
+        >
+        <br />
+        <router-link class="text-indigo-600 hover:text-indigo-500" :to="`/chicago`"
+          >Browse the Harvard Art Museums API</router-link
+        >
+        <br />
+        <br />
+        <span class="flex items-center gap-x-2 justify-center">
+          or search for anything. <FaceSmileIcon class="h-5 w-5"></FaceSmileIcon
+        ></span>
       </p>
     </div>
   </div>
@@ -157,6 +171,7 @@ import type { artworkObject } from '@/interfaces/artworks.interfaces'
 import BlackGlyph from '@/components/icons/BlackGlyph.vue'
 import ZoomModal from '@/components/ZoomModal.vue'
 import { MagnifyingGlassPlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { FaceSmileIcon, CubeTransparentIcon } from '@heroicons/vue/24/outline'
 
 const api = import.meta.env.VITE_APP_API
 const userStore = useUserStore()
@@ -181,6 +196,7 @@ const fetchCollection = () => {
     .then((response) => {
       loading.value = false
       artworkData.value = response.data
+      console.log(response.data)
     })
     .catch((error) => {
       console.error(error)
