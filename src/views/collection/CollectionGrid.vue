@@ -117,7 +117,7 @@
           >Browse the Chicago Art Institute API</router-link
         >
         <br />
-        <router-link class="text-indigo-600 hover:text-indigo-500" :to="`/chicago`"
+        <router-link class="text-indigo-600 hover:text-indigo-500" :to="`/harvard`"
           >Browse the Harvard Art Museums API</router-link
         >
         <br />

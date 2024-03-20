@@ -121,7 +121,7 @@ const saveArtwork = (artwork: chicagoObject) => {
       imageWidth: artwork.thumbnail.width,
       imageHeight: artwork.thumbnail.height
     },
-    culture: extractCulture(artwork.artist_display)
+    culture: extractCulture(artwork.artist_display, artwork.title)
   }
   isSubmitting.value = true
   const token = localStorage.getItem('token')
@@ -148,7 +148,7 @@ const saveArtwork = (artwork: chicagoObject) => {
     })
 }
 
-const extractCulture = (str: string) => {
+const extractCulture = (str: string, title: string) => {
   str = str.replace(/\n/g, ' ')
   let foundNationality = ''
 
@@ -162,6 +162,10 @@ const extractCulture = (str: string) => {
 
   // If no match is found, then split the string into words and check each word against nationalities
   if (!foundNationality) {
+    if (title.includes('Mexico')) {
+      foundNationality = 'Mexican'
+      return foundNationality
+    }
     const words = str.toLowerCase().split(/\s+/) // Split input string into words
     for (let word of words) {
       for (let nationality of nationalities) {
