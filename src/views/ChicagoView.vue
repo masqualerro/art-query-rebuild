@@ -74,7 +74,6 @@ const getChicagoData = async (searchTerm: string) => {
     if (chicagoData.value.length === 0) {
       loading.value = false
     }
-    console.log(response)
   } catch (error) {
     console.error(error)
   }
@@ -153,10 +152,15 @@ const extractCulture = (str: string, title: string) => {
   let foundNationality = ''
 
   // First, check if the entire string matches any nationality
-  for (let nationality of nationalities) {
-    if (str.includes(nationality) || nationality.includes(str) || nationality.startsWith(str)) {
-      foundNationality = nationality
-      break // Exit the loop if a match is found
+  const words = str.split(/\s+/)
+
+  // Check each word against nationalities
+  for (let word of words) {
+    for (let nationality of nationalities) {
+      if (word.includes(nationality)) {
+        foundNationality = nationality
+        return foundNationality // Return as soon as a nationality is found
+      }
     }
   }
 
