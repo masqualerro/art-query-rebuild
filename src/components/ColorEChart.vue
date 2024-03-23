@@ -9,11 +9,18 @@ import { LegendComponent, ToolboxComponent } from 'echarts/components'
 import { SVGRenderer } from 'echarts/renderers'
 import VChart, { THEME_KEY } from 'vue-echarts'
 import { ref, provide } from 'vue'
-import colorInsightData from '@/views/collection/mockData.js/colorInsight'
+// import colorInsightData from '@/views/collection/mockData.js/colorInsight'
 
 use([LegendComponent, ToolboxComponent, PieChart, SVGRenderer])
 
 provide(THEME_KEY, 'default')
+
+const props = defineProps({
+  colorInsightData: {
+    type: Object,
+    required: true
+  }
+})
 
 const option = ref({
   legend: {
@@ -42,13 +49,13 @@ const option = ref({
         length2: 15,
         smooth: true
       },
-      data: colorInsightData.insights
+      data: props.colorInsightData.insights
         .filter((insight) => insight.hue !== 'White')
         .map((insight) => ({
           value: insight.frequency,
           name: insight.hue
         })),
-      color: colorInsightData.insights
+      color: props.colorInsightData.insights
         .filter((insight) => insight.hue !== 'White')
         .map((insight) => {
           const colors = insight.hex_colors
@@ -58,7 +65,7 @@ const option = ref({
             y: 0.8,
             r: 0.2,
             colorStops: colors.map((color, index) => ({
-              offset: index / (colors.length - 1),
+              offset: colors.length > 1 ? index / (colors.length - 1) : 0,
               color: color
             })),
             global: false

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-between items-center">
+  <div class="flex justify-center items-center">
     <TabNavigation :tabs="tabs"></TabNavigation>
   </div>
   <RouterView></RouterView>

@@ -2,11 +2,11 @@
   <div class="pt-3">
     <transition
       enter-active-class="transition-all ease-out duration-1000"
-      enter-from-class="opacity-0 w-0"
-      enter-to-class="opacity-100 w-full"
+      enter-from-class="opacity-0 max-w-0"
+      enter-to-class="opacity-100 max-w-full"
       leave-active-class="transition-all ease-in duration-1000"
-      leave-from-class="opacity-100 w-full"
-      leave-to-class="opacity-0 w-0"
+      leave-from-class="opacity-100 max-w-full"
+      leave-to-class="opacity-0 max-w-0"
     >
       <div
         v-if="gradient !== `#000`"
@@ -37,394 +37,266 @@
     </div>
   </div>
   <main>
-    <header class="relative isolate pt-5">
-      <div class="absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
-        <div
-          class="absolute left-16 top-full -mt-16 transform-gpu opacity-50 blur-3xl xl:left-1/2 xl:-ml-80"
-        >
+    <div v-if="!loading">
+      <header class="relative isolate pt-5">
+        <div class="absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
           <div
-            class="aspect-[1154/678] w-[72.125rem]"
-            style="
-              clip-path: polygon(
-                100% 38.5%,
-                82.6% 100%,
-                60.2% 37.7%,
-                52.4% 32.1%,
-                47.5% 41.8%,
-                45.2% 65.6%,
-                27.5% 23.4%,
-                0.1% 35.3%,
-                17.9% 0%,
-                27.7% 23.4%,
-                76.2% 2.5%,
-                74.2% 56%,
-                100% 38.5%
-              );
-            "
-            :style="{ background: gradient }"
-          />
-        </div>
-        <div class="absolute inset-x-0 bottom-0 h-px bg-gray-900/5" />
-      </div>
-
-      <div class="mx-auto max-w-7xl px-4 py-10">
-        <div
-          class="mx-auto flex max-w-2xl items-center justify-between gap-x-8 lg:mx-0 lg:max-w-none"
-        >
-          <div class="flex items-center gap-x-6">
-            <BlackGlyph class="h-16 w-16 flex-none rounded-full ring-1 ring-gray-900/10 p-3" />
-            <h1>
-              <div class="text-sm leading-6 text-gray-500">Miguel Sedillo</div>
-              <div class="mt-1 text-base font-semibold leading-6 text-gray-900">
-                Artwork Insights
-              </div>
-            </h1>
-          </div>
-          <div class="flex items-center gap-x-4 sm:gap-x-6">
-            <button
-              type="button"
-              class="hidden text-sm font-semibold leading-6 text-gray-900 sm:block"
-            >
-              Copy URL
-            </button>
-            <a href="#" class="hidden text-sm font-semibold leading-6 text-gray-900 sm:block"
-              >Edit</a
-            >
-            <a
-              href="#"
-              class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              >Send</a
-            >
-
-            <Menu as="div" class="relative sm:hidden">
-              <MenuButton class="-m-3 block p-3">
-                <span class="sr-only">More</span>
-                <EllipsisVerticalIcon class="h-5 w-5 text-gray-500" aria-hidden="true" />
-              </MenuButton>
-
-              <transition
-                enter-active-class="transition ease-out duration-100"
-                enter-from-class="transform opacity-0 scale-95"
-                enter-to-class="transform opacity-100 scale-100"
-                leave-active-class="transition ease-in duration-75"
-                leave-from-class="transform opacity-100 scale-100"
-                leave-to-class="transform opacity-0 scale-95"
-              >
-                <MenuItems
-                  class="absolute right-0 z-10 mt-0.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none"
-                >
-                  <MenuItem v-slot="{ active }">
-                    <button
-                      type="button"
-                      :class="[
-                        active ? 'bg-gray-50' : '',
-                        'block w-full px-3 py-1 text-left text-sm leading-6 text-gray-900'
-                      ]"
-                    >
-                      Copy URL
-                    </button>
-                  </MenuItem>
-                  <MenuItem v-slot="{ active }">
-                    <a
-                      href="#"
-                      :class="[
-                        active ? 'bg-gray-50' : '',
-                        'block px-3 py-1 text-sm leading-6 text-gray-900'
-                      ]"
-                      >Edit</a
-                    >
-                  </MenuItem>
-                </MenuItems>
-              </transition>
-            </Menu>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <div class="mx-auto max-w-7xl py-12">
-      <div
-        class="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3"
-      >
-        <!-- Invoice summary -->
-        <div class="lg:col-start-3 lg:row-end-1">
-          <h2 class="sr-only">Summary</h2>
-          <div
-            class="rounded-lg bg-gray-100 shadow-sm ring-1 ring-gray-900/5 flex items-center justify-center"
+            class="absolute left-16 top-full -mt-16 transform-gpu opacity-50 blur-3xl xl:left-1/2 xl:-ml-80"
           >
-            <ColorEChart></ColorEChart>
-          </div>
-        </div>
-
-        <!-- Invoice -->
-        <div
-          class="-mx-4 px-4 py-8 shadow-sm ring-1 ring-gray-900/5 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16"
-        >
-          <h2 class="text-base font-semibold leading-6 text-gray-900">Main Preference list</h2>
-          <dl class="mt-6 grid grid-cols-1 text-sm leading-6 sm:grid-cols-2">
-            <div class="sm:pr-4">
-              <dt class="inline text-gray-500">Issued on</dt>
-              {{ ' ' }}
-              <dd class="inline text-gray-700">
-                <time datetime="2023-23-01">January 23, 2023</time>
-              </dd>
-            </div>
-            <div class="mt-2 sm:mt-0 sm:pl-4">
-              <dt class="inline text-gray-500">Due on</dt>
-              {{ ' ' }}
-              <dd class="inline text-gray-700">
-                <time datetime="2023-31-01">January 31, 2023</time>
-              </dd>
-            </div>
-            <div class="mt-6 border-t border-gray-900/5 pt-6 sm:pr-4">
-              <dt class="font-semibold text-gray-900">From</dt>
-              <dd class="mt-2 text-gray-500">
-                <span class="font-medium text-gray-900">Acme, Inc.</span><br />7363 Cynthia Pass<br />Toronto,
-                ON N3Y 4H8
-              </dd>
-            </div>
-            <div class="mt-8 sm:mt-6 sm:border-t sm:border-gray-900/5 sm:pl-4 sm:pt-6">
-              <dt class="font-semibold text-gray-900">To</dt>
-              <dd class="mt-2 text-gray-500">
-                <span class="font-medium text-gray-900">Tuple, Inc</span><br />886 Walter Street<br />New
-                York, NY 12345
-              </dd>
-            </div>
-          </dl>
-          <table class="mt-16 w-full whitespace-nowrap text-left text-sm leading-6">
-            <colgroup>
-              <col class="w-full" />
-              <col />
-              <col />
-              <col />
-            </colgroup>
-            <thead class="border-b border-gray-200 text-gray-900">
-              <tr>
-                <th scope="col" class="px-0 py-3 font-semibold">Projects</th>
-                <th
-                  scope="col"
-                  class="hidden py-3 pl-8 pr-0 text-right font-semibold sm:table-cell"
-                >
-                  Hours
-                </th>
-                <th
-                  scope="col"
-                  class="hidden py-3 pl-8 pr-0 text-right font-semibold sm:table-cell"
-                >
-                  Rate
-                </th>
-                <th scope="col" class="py-3 pl-8 pr-0 text-right font-semibold">Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in invoice.items" :key="item.id" class="border-b border-gray-100">
-                <td class="max-w-0 px-0 py-5 align-top">
-                  <div class="truncate font-medium text-gray-900">{{ item.title }}</div>
-                  <div class="truncate text-gray-500">{{ item.description }}</div>
-                </td>
-                <td
-                  class="hidden py-5 pl-8 pr-0 text-right align-top tabular-nums text-gray-700 sm:table-cell"
-                >
-                  {{ item.hours }}
-                </td>
-                <td
-                  class="hidden py-5 pl-8 pr-0 text-right align-top tabular-nums text-gray-700 sm:table-cell"
-                >
-                  {{ item.rate }}
-                </td>
-                <td class="py-5 pl-8 pr-0 text-right align-top tabular-nums text-gray-700">
-                  {{ item.price }}
-                </td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr>
-                <th scope="row" class="px-0 pb-0 pt-6 font-normal text-gray-700 sm:hidden">
-                  Subtotal
-                </th>
-                <th
-                  scope="row"
-                  colspan="3"
-                  class="hidden px-0 pb-0 pt-6 text-right font-normal text-gray-700 sm:table-cell"
-                >
-                  Subtotal
-                </th>
-                <td class="pb-0 pl-8 pr-0 pt-6 text-right tabular-nums text-gray-900">
-                  {{ invoice.subTotal }}
-                </td>
-              </tr>
-              <tr>
-                <th scope="row" class="pt-4 font-normal text-gray-700 sm:hidden">Tax</th>
-                <th
-                  scope="row"
-                  colspan="3"
-                  class="hidden pt-4 text-right font-normal text-gray-700 sm:table-cell"
-                >
-                  Tax
-                </th>
-                <td class="pb-0 pl-8 pr-0 pt-4 text-right tabular-nums text-gray-900">
-                  {{ invoice.tax }}
-                </td>
-              </tr>
-              <tr>
-                <th scope="row" class="pt-4 font-semibold text-gray-900 sm:hidden">Total</th>
-                <th
-                  scope="row"
-                  colspan="3"
-                  class="hidden pt-4 text-right font-semibold text-gray-900 sm:table-cell"
-                >
-                  Total
-                </th>
-                <td class="pb-0 pl-8 pr-0 pt-4 text-right font-semibold tabular-nums text-gray-900">
-                  {{ invoice.total }}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        <div class="lg:col-start-3">
-          <!-- Activity feed -->
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm font-semibold leading-6 text-gray-900">AI Insights</h2>
-            <div>
-              <nav class="flex space-x-4" aria-label="Tabs">
-                <a
-                  v-for="tab in tabs"
-                  :key="tab.name"
-                  :href="tab.href"
-                  :class="[
-                    tab.current ? 'bg-gray-100 text-gray-700' : 'text-gray-500 hover:text-gray-700',
-                    'rounded-md px-3 py-2 text-xs font-medium'
-                  ]"
-                  :aria-current="tab.current ? 'page' : undefined"
-                  >{{ tab.name }}</a
-                >
-              </nav>
-            </div>
-          </div>
-
-          <div class="mt-6">
-            <p class="text-xs" v-html="formatText(colorData.aiInsight)"></p>
-          </div>
-
-          <!-- New comment form -->
-          <!-- <div class="mt-6 flex gap-x-3">
-            <img
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-              alt=""
-              class="h-6 w-6 flex-none rounded-full bg-gray-50"
+            <div
+              class="aspect-[1154/678] w-[72.125rem]"
+              style="
+                clip-path: polygon(
+                  100% 38.5%,
+                  82.6% 100%,
+                  60.2% 37.7%,
+                  52.4% 32.1%,
+                  47.5% 41.8%,
+                  45.2% 65.6%,
+                  27.5% 23.4%,
+                  0.1% 35.3%,
+                  17.9% 0%,
+                  27.7% 23.4%,
+                  76.2% 2.5%,
+                  74.2% 56%,
+                  100% 38.5%
+                );
+              "
+              :style="{ background: gradient }"
             />
-            <form action="#" class="relative flex-auto">
-              <div
-                class="overflow-hidden rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-indigo-600"
-              >
-                <label for="comment" class="sr-only">Add your comment</label>
-                <textarea
-                  rows="2"
-                  name="comment"
-                  id="comment"
-                  class="block w-full resize-none border-0 bg-transparent py-1.5 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
-                  placeholder="Add your comment..."
-                />
-              </div>
+          </div>
+          <div class="absolute inset-x-0 bottom-0 h-px bg-gray-900/5" />
+        </div>
 
-              <div class="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
-                <div class="flex items-center space-x-5">
-                  <div class="flex items-center">
-                    <button
-                      type="button"
-                      class="-m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-                    >
-                      <PaperClipIcon class="h-5 w-5" aria-hidden="true" />
-                      <span class="sr-only">Attach a file</span>
-                    </button>
-                  </div>
-                  <div class="flex items-center">
-                    <Listbox as="div" v-model="selected">
-                      <ListboxLabel class="sr-only">Your mood</ListboxLabel>
-                      <div class="relative">
-                        <ListboxButton
-                          class="relative -m-2.5 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:text-gray-500"
-                        >
-                          <span class="flex items-center justify-center">
-                            <span v-if="selected.value === null">
-                              <FaceSmileIcon class="h-5 w-5 flex-shrink-0" aria-hidden="true" />
-                              <span class="sr-only">Add your mood</span>
-                            </span>
-                            <span v-if="!(selected.value === null)">
-                              <span
-                                :class="[
-                                  selected.bgColor,
-                                  'flex h-8 w-8 items-center justify-center rounded-full'
-                                ]"
-                              >
-                                <component
-                                  :is="selected.icon"
-                                  class="h-5 w-5 flex-shrink-0 text-white"
-                                  aria-hidden="true"
-                                />
-                              </span>
-                              <span class="sr-only">{{ selected.name }}</span>
-                            </span>
-                          </span>
-                        </ListboxButton>
-
-                        <transition
-                          leave-active-class="transition ease-in duration-100"
-                          leave-from-class="opacity-100"
-                          leave-to-class="opacity-0"
-                        >
-                          <ListboxOptions
-                            class="absolute z-10 -ml-6 mt-1 w-60 rounded-lg bg-white py-3 text-base shadow ring-1 ring-black ring-opacity-5 focus:outline-none sm:ml-auto sm:w-64 sm:text-sm"
-                          >
-                            <ListboxOption
-                              as="template"
-                              v-for="mood in moods"
-                              :key="mood?.value"
-                              :value="mood"
-                              v-slot="{ active }"
-                            >
-                              <li
-                                :class="[
-                                  active ? 'bg-gray-100' : 'bg-white',
-                                  'relative cursor-default select-none px-3 py-2'
-                                ]"
-                              >
-                                <div class="flex items-center">
-                                  <div
-                                    :class="[
-                                      mood.bgColor,
-                                      'flex h-8 w-8 items-center justify-center rounded-full'
-                                    ]"
-                                  >
-                                    <component
-                                      :is="mood.icon"
-                                      :class="[mood.iconColor, 'h-5 w-5 flex-shrink-0']"
-                                      aria-hidden="true"
-                                    />
-                                  </div>
-                                  <span class="ml-3 block truncate font-medium">{{
-                                    mood.name
-                                  }}</span>
-                                </div>
-                              </li>
-                            </ListboxOption>
-                          </ListboxOptions>
-                        </transition>
-                      </div>
-                    </Listbox>
-                  </div>
+        <div class="mx-auto max-w-7xl px-4 py-10">
+          <div
+            class="mx-auto flex max-w-2xl items-center justify-between gap-x-8 lg:mx-0 lg:max-w-none"
+          >
+            <div class="flex items-center gap-x-6">
+              <BlackGlyph class="h-16 w-16 flex-none rounded-full ring-1 ring-gray-900/10 p-3" />
+              <h1>
+                <div class="text-sm leading-6 text-gray-500">Miguel Sedillo</div>
+                <div class="mt-1 text-base font-semibold leading-6 text-gray-900">
+                  Artwork Insights
                 </div>
-                <button
-                  type="submit"
-                  class="rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+              </h1>
+            </div>
+            <div class="flex items-center gap-x-4 sm:gap-x-6">
+              <!-- <a
+                href="#"
+                class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                >Download</a
+              > -->
+
+              <Menu as="div" class="relative sm:hidden">
+                <MenuButton class="-m-3 block p-3">
+                  <span class="sr-only">More</span>
+                  <EllipsisVerticalIcon class="h-5 w-5 text-gray-500" aria-hidden="true" />
+                </MenuButton>
+
+                <transition
+                  enter-active-class="transition ease-out duration-100"
+                  enter-from-class="transform opacity-0 scale-95"
+                  enter-to-class="transform opacity-100 scale-100"
+                  leave-active-class="transition ease-in duration-75"
+                  leave-from-class="transform opacity-100 scale-100"
+                  leave-to-class="transform opacity-0 scale-95"
                 >
-                  Comment
-                </button>
+                  <MenuItems
+                    class="absolute right-0 z-10 mt-0.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none"
+                  >
+                    <MenuItem v-slot="{ active }">
+                      <button
+                        type="button"
+                        :class="[
+                          active ? 'bg-gray-50' : '',
+                          'block w-full px-3 py-1 text-left text-sm leading-6 text-gray-900'
+                        ]"
+                      >
+                        Copy URL
+                      </button>
+                    </MenuItem>
+                    <MenuItem v-slot="{ active }">
+                      <a
+                        href="#"
+                        :class="[
+                          active ? 'bg-gray-50' : '',
+                          'block px-3 py-1 text-sm leading-6 text-gray-900'
+                        ]"
+                        >Edit</a
+                      >
+                    </MenuItem>
+                  </MenuItems>
+                </transition>
+              </Menu>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="mx-auto max-w-7xl py-12">
+        <div
+          class="mx-auto grid max-w-2xl grid-cols-1 grid-rows-1 items-start gap-x-8 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3"
+        >
+          <!-- Invoice summary -->
+          <div class="lg:col-start-3 lg:row-end-1">
+            <h2 class="sr-only">Summary</h2>
+            <div
+              v-if="colorData"
+              class="rounded-lg bg-gray-100 shadow-sm ring-1 ring-gray-900/5 flex items-center justify-center"
+            >
+              <ColorEChart :color-insight-data="colorData"></ColorEChart>
+            </div>
+          </div>
+
+          <!-- Invoice -->
+          <div
+            class="-mx-4 px-4 py-8 shadow-sm ring-1 ring-gray-900/5 sm:mx-0 sm:rounded-lg sm:px-8 sm:pb-14 lg:col-span-2 lg:row-span-2 lg:row-end-2 xl:px-16 xl:pb-20 xl:pt-16"
+          >
+            <h2 class="text-base font-semibold leading-6 text-gray-900">Objective Preferences</h2>
+            <dl class="mt-6 grid grid-cols-1 text-sm leading-6 sm:grid-cols-2">
+              <div class="sm:pr-2 flex items-center">
+                <dt class="inline text-gray-500">Top Color:</dt>
+                {{ ' ' }}
+                <dd
+                  :style="{ color: colorData?.insights[0].hue }"
+                  class="inline text-gray-700 font-black"
+                >
+                  <Popover v-slot="{ open }" class="relative">
+                    <PopoverButton
+                      :class="open ? 'text-black' : 'text-black'"
+                      class="group inline-flex items-center rounded-md px-2 py-2 text-base font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+                    >
+                      <span
+                        :style="{ color: colorData.insights[0].hue }"
+                        class="inline font-black text-sm group-hover:text-opacity-50"
+                      >
+                        {{ colorData?.insights[0].hue }}</span
+                      >
+                      <ChevronDownIcon
+                        :class="open ? 'text-gray-500' : 'text-gray-500'"
+                        class="ml-1 h-5 w-5 transition duration-150 ease-in-out group-hover:text-opacity-50"
+                        aria-hidden="true"
+                      />
+                    </PopoverButton>
+
+                    <transition
+                      enter-active-class="transition duration-200 ease-out"
+                      enter-from-class="translate-y-1 opacity-0"
+                      enter-to-class="translate-y-0 opacity-100"
+                      leave-active-class="transition duration-150 ease-in"
+                      leave-from-class="translate-y-0 opacity-100"
+                      leave-to-class="translate-y-1 opacity-0"
+                    >
+                      <PopoverPanel
+                        class="absolute z-10 mt-3 w-screen max-w-sm transform px-4 sm:px-0 lg:max-w-lg"
+                      >
+                        <div class="overflow-hidden rounded-lg shadow-lg ring-1 ring-black/5">
+                          <div class="relative grid gap-8 bg-white p-7 lg:grid-cols-2">
+                            <p
+                              v-for="(color, index) in colorData?.insights[0].hex_colors"
+                              :key="index"
+                              :style="{ color: color, display: 'inline' }"
+                            >
+                              {{ color }}
+                            </p>
+                          </div>
+                        </div>
+                      </PopoverPanel>
+                    </transition>
+                  </Popover>
+                </dd>
               </div>
-            </form>
-          </div> -->
+              <div class="mt-2 sm:mt-0 sm:pl-4">
+                <dt class="inline text-gray-500">Top Artist:</dt>
+                {{ ' ' }}
+                <dd class="inline text-gray-700">
+                  {{ artistData && artistData[0]?.artist }}
+                </dd>
+              </div>
+              <div class="mt-6 border-t border-gray-900/5 pt-6 sm:pr-4">
+                <dt class="font-semibold text-gray-900">Top Cultures</dt>
+                <dd
+                  v-for="culture in cultureData"
+                  :key="culture.culture"
+                  class="mt-2 text-gray-500"
+                >
+                  <span class="font-medium text-gray-900">{{ culture.culture }}</span> --
+                  {{ culture.frequency }}
+                  <span
+                    v-if="culture.country"
+                    class="fi ml-2"
+                    :class="`fi-${culture.country}`"
+                  ></span>
+                </dd>
+              </div>
+              <div class="mt-8 sm:mt-6 sm:border-t sm:border-gray-900/5 sm:pl-4 sm:pt-6">
+                <dt class="font-semibold text-gray-900">Top Styles / Mediums</dt>
+                <dd v-for="style in styleData" :key="style.style" class="mt-2 text-gray-500">
+                  <span class="font-medium text-gray-900">{{
+                    capitalizeFirstLetter(style.style)
+                  }}</span>
+                  --
+                  {{ style.frequency }}
+                </dd>
+              </div>
+            </dl>
+            <div class="mt-16 w-full text-left text-sm leading-6">
+              <div
+                class="border-b border-gray-200 text-base font-semibold leading-6 text-gray-900 pb-4"
+              >
+                Insight Summary
+              </div>
+              <p
+                v-if="!aiSummaryLoading"
+                class="text-xs mt-4"
+                v-html="formatText(aiSummary || '')"
+              ></p>
+              <div v-else class="flex flex-col gap-y-4 items-center justify-center mt-10">
+                <BlackGlyph class="animate-bounce h-8 w-auto" />
+                <p class="text-xs italic">Generating summary ...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-start-3">
+            <!-- Activity feed -->
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-semibold leading-6 text-gray-900">AI Insights</h2>
+              <div>
+                <nav class="flex space-x-4" aria-label="Tabs">
+                  <button
+                    v-for="tab in tabs"
+                    :key="tab.name"
+                    @click="currentTab = tab.name"
+                    :class="[
+                      currentTab === tab.name
+                        ? 'bg-gray-100 text-gray-700'
+                        : 'text-gray-500 hover:text-gray-700',
+                      'rounded-md px-3 py-2 text-xs font-medium'
+                    ]"
+                    :aria-current="currentTab === tab.name ? 'page' : undefined"
+                  >
+                    {{ tab.name }}
+                  </button>
+                </nav>
+              </div>
+            </div>
+
+            <div v-if="!aiLoading && currentTab === 'Color'" class="mt-6">
+              <p class="text-xs" v-html="formatText(colorAi || '')"></p>
+            </div>
+            <div v-else-if="!aiLoading && currentTab === 'Culture'" class="mt-6">
+              <p class="text-xs" v-html="formatText(cultureAi || '')"></p>
+            </div>
+            <div v-else-if="!aiLoading && currentTab === 'Styles'" class="mt-6">
+              <p class="text-xs" v-html="formatText(styleAi || '')"></p>
+            </div>
+            <div v-else class="flex flex-col gap-y-4 items-center justify-center mt-10">
+              <BlackGlyph class="animate-bounce h-8 w-auto" />
+              <p class="text-xs italic">Generating insight ...</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -445,40 +317,36 @@
   width: 100%;
   opacity: 1;
 }
+.color-button:hover {
+  filter: brightness(120%);
+  opacity: 0.8;
+}
 </style>
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 import type { colorResponse } from '@/interfaces/insights.interfaces'
 import { FaceSmileIcon, CubeTransparentIcon } from '@heroicons/vue/24/outline'
 import {
-  Listbox,
-  ListboxButton,
-  ListboxLabel,
-  ListboxOption,
-  ListboxOptions,
   Menu,
   MenuButton,
   MenuItem,
-  MenuItems
+  MenuItems,
+  Popover,
+  PopoverButton,
+  PopoverPanel
 } from '@headlessui/vue'
-import {
-  CalendarDaysIcon,
-  CreditCardIcon,
-  EllipsisVerticalIcon,
-  FaceFrownIcon,
-  FireIcon,
-  HandThumbUpIcon,
-  HeartIcon,
-  PaperClipIcon,
-  UserCircleIcon,
-  XMarkIcon as XMarkIconMini
-} from '@heroicons/vue/20/solid'
-import { CheckCircleIcon } from '@heroicons/vue/24/solid'
+import { EllipsisVerticalIcon, ChevronDownIcon } from '@heroicons/vue/20/solid'
 import BlackGlyph from '@/components/icons/BlackGlyph.vue'
-import colorInsightData from './mockData.js/colorInsight'
+// import colorInsightData from './mockData.js/colorInsight'
 import ColorEChart from '@/components/ColorEChart.vue'
+import type { cultureInsight } from '@/interfaces/insights.interfaces'
+import countries from '../../../node_modules/flag-icons/country.json'
+import nationalitiesCountries from '@/json/nationalitiesCountries.json'
+import type { styleInsight } from '@/interfaces/insights.interfaces'
+import type { artistInsight } from '@/interfaces/insights.interfaces'
+import { color } from 'echarts'
 
 const invoice = {
   subTotal: '$8,800.00',
@@ -519,66 +387,27 @@ const invoice = {
     }
   ]
 }
-const activity = [
-  {
-    id: 1,
-    type: 'created',
-    person: { name: 'Chelsea Hagon' },
-    date: '7d ago',
-    dateTime: '2023-01-23T10:32'
-  },
-  {
-    id: 2,
-    type: 'edited',
-    person: { name: 'Chelsea Hagon' },
-    date: '6d ago',
-    dateTime: '2023-01-23T11:03'
-  },
-  {
-    id: 3,
-    type: 'sent',
-    person: { name: 'Chelsea Hagon' },
-    date: '6d ago',
-    dateTime: '2023-01-23T11:24'
-  },
-  {
-    id: 4,
-    type: 'commented',
-    person: {
-      name: 'Chelsea Hagon',
-      imageUrl:
-        'https://images.unsplash.com/photo-1550525811-e5869dd03032?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-    },
-    comment: 'Called client, they reassured me the invoice would be paid by the 25th.',
-    date: '3d ago',
-    dateTime: '2023-01-23T15:56'
-  },
-  {
-    id: 5,
-    type: 'viewed',
-    person: { name: 'Alex Curren' },
-    date: '2d ago',
-    dateTime: '2023-01-24T09:12'
-  },
-  {
-    id: 6,
-    type: 'paid',
-    person: { name: 'Alex Curren' },
-    date: '1d ago',
-    dateTime: '2023-01-24T09:20'
-  }
-]
 const tabs = [
-  { name: 'Color', href: '#', current: true },
-  { name: 'Culture', href: '#', current: false },
-  { name: 'Styles', href: '#', current: false }
+  { name: 'Color', current: true },
+  { name: 'Culture', current: false },
+  { name: 'Styles', current: false }
 ]
 
 const api = import.meta.env.VITE_APP_API
 const userStore = useUserStore()
 const loading = ref(true)
 // const colorData = ref<colorResponse>()
-const colorData = ref<colorResponse>(colorInsightData)
+const colorData = ref<colorResponse>()
+const cultureData = ref<cultureInsight[]>()
+const styleData = ref<styleInsight[]>()
+const artistData = ref<artistInsight[]>()
+const colorAi = ref<string>()
+const cultureAi = ref<string>()
+const styleAi = ref<string>()
+const aiSummary = ref<string>()
+const aiLoading = ref(true)
+const aiSummaryLoading = ref(true)
+const currentTab = ref('Color')
 
 const fetchColorInsights = () => {
   const token = localStorage.getItem('token')
@@ -597,9 +426,34 @@ const fetchColorInsights = () => {
     .catch((error) => {
       console.error(error)
       loading.value = false
-      window.alert(error)
     })
 }
+fetchColorInsights()
+
+const fetchCultureInsights = () => {
+  const token = localStorage.getItem('token')
+
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  }
+
+  axios
+    .get(`${api}/artwork-insights/culture/${userStore.user?.id}`, config)
+    .then((response) => {
+      loading.value = false
+      cultureData.value = response.data.slice(0, 3)
+      console.log(cultureData.value)
+      cultureData.value?.forEach((culture) => {
+        culture.country = findCountryByNationality(culture.culture)
+      })
+      console.log(cultureData.value)
+    })
+    .catch((error) => {
+      console.error(error)
+      loading.value = false
+    })
+}
+fetchCultureInsights()
 
 const formatText = (text: string) => {
   return text.replace(/\n/g, '<br>')
@@ -609,14 +463,156 @@ const gradient = computed(() => {
   if (colorData.value?.insights) {
     const allColors = colorData.value.insights.flatMap((insight) => insight.hex_colors)
     if (allColors.length === 1) {
+      console.log('One color data')
       // If there's only one color, return it as the background color
       return allColors[0]
     } else {
+      console.log('Multiple color data')
       // If there's more than one color, return a linear gradient
       return `linear-gradient(to right, ${allColors.join(', ')})`
     }
   }
+  console.log('No color data')
   return '#000'
 })
-// fetchColorInsights()
+
+function findCountryByNationality(nationality: string) {
+  let nationalityObject = nationalitiesCountries.find((n) => {
+    let nationalities = n.nationality.split(',').map((n) => n.trim())
+    return nationalities.includes(nationality)
+  })
+
+  if (!nationalityObject) return null
+
+  let country = countries.find((c) => c.name === nationalityObject?.en_short_name)
+
+  // Return the country code instead of the whole country object
+  return country ? country.code : null
+}
+
+const fetchStyleInsights = () => {
+  const token = localStorage.getItem('token')
+
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  }
+
+  axios
+    .get(`${api}/artwork-insights/styles/${userStore.user?.id}`, config)
+    .then((response) => {
+      loading.value = false
+      styleData.value = response.data.slice(0, 3)
+      console.log(styleData.value)
+    })
+    .catch((error) => {
+      console.error(error)
+      loading.value = false
+    })
+}
+
+fetchStyleInsights()
+
+const fetchArtistInsights = () => {
+  const token = localStorage.getItem('token')
+
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  }
+
+  axios
+    .get(`${api}/artwork-insights/artists/${userStore.user?.id}`, config)
+    .then((response) => {
+      loading.value = false
+      artistData.value = response.data.slice(0, 3)
+      console.log(artistData.value)
+    })
+    .catch((error) => {
+      console.error(error)
+      loading.value = false
+    })
+}
+fetchArtistInsights()
+
+const capitalizeFirstLetter = (string: string) => {
+  return string.charAt(0).toUpperCase() + string.slice(1)
+}
+
+const fetchAiColor = () => {
+  const token = localStorage.getItem('token')
+
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  }
+
+  axios
+    .get(`${api}/artwork-insights/ai/color/${userStore.user?.id}`, config)
+    .then((response) => {
+      loading.value = false
+      colorAi.value = response.data
+      aiLoading.value = false
+    })
+    .catch((error) => {
+      console.error(error)
+      loading.value = false
+    })
+}
+
+const fetchCultureColor = () => {
+  const token = localStorage.getItem('token')
+
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  }
+
+  axios
+    .get(`${api}/artwork-insights/ai/culture/${userStore.user?.id}`, config)
+    .then((response) => {
+      loading.value = false
+      cultureAi.value = response.data
+    })
+    .catch((error) => {
+      console.error(error)
+      loading.value = false
+    })
+}
+const fetchStyleColor = () => {
+  const token = localStorage.getItem('token')
+
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  }
+
+  axios
+    .get(`${api}/artwork-insights/ai/style/${userStore.user?.id}`, config)
+    .then((response) => {
+      loading.value = false
+      styleAi.value = response.data
+    })
+    .catch((error) => {
+      console.error(error)
+      loading.value = false
+    })
+}
+const fetchAiSummary = () => {
+  const token = localStorage.getItem('token')
+
+  const config = {
+    headers: { Authorization: `Bearer ${token}` }
+  }
+
+  axios
+    .get(`${api}/artwork-insights/ai/summary/${userStore.user?.id}`, config)
+    .then((response) => {
+      aiSummaryLoading.value = false
+      aiSummary.value = response.data
+    })
+    .catch((error) => {
+      console.error(error)
+      loading.value = false
+    })
+}
+fetchAiColor()
+fetchCultureColor()
+fetchStyleColor()
+fetchAiSummary()
 </script>

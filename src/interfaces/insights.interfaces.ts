@@ -6,5 +6,18 @@ export interface colorInsight {
 export interface colorResponse {
   insights: colorInsight[]
   total: number
-  aiInsight: string
+}
+export interface cultureInsight {
+  culture: string
+  frequency: number
+  country: string | null
+}
+
+export interface styleInsight {
+  style: string
+  frequency: number
+}
+export interface artistInsight {
+  artist: string
+  frequency: number
 }
