@@ -168,7 +168,7 @@
                       class="group inline-flex items-center rounded-md px-2 py-2 text-base font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
                     >
                       <span
-                        :style="{ color: colorData.insights[0].hue }"
+                        :style="{ color: colorData?.insights[0].hue }"
                         class="inline font-black text-sm group-hover:text-opacity-50"
                       >
                         {{ colorData?.insights[0].hue }}</span
