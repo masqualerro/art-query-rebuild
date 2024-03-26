@@ -12,13 +12,10 @@ The API is available here: [Art Query API](https://github.com/masqualerro/art-qu
 This app serves as a platform for exploring a diverse range of artworks and gaining insights from your favorites.
 
 ### Discovering Artworks
-Use the search input in the main navbar to find artworks that capture your interest. 
-
-You can specify which art API to search from using the dropdown menu. 
-
-Navigate to 'Chicago Art Institute' or 'Harvard Art Museums' to view an unfiltered display of art from each respective museum. 
-
-Save your favorite pieces to your collection by hovering over them and clicking the heart icon.
+- Use the search input in the main navbar to find artworks that capture your interest. 
+- You can specify which art API to search from using the dropdown menu. 
+- Navigate to 'Chicago Art Institute' or 'Harvard Art Museums' to view an unfiltered display of art from each respective museum. 
+- Save your favorite pieces to your collection by hovering over them and clicking the heart icon.
 
 ### Your Collection
 Explore your saved collection of art and gain insights into your preferences, such as color palettes and cultural themes, on the "Collection" page.
