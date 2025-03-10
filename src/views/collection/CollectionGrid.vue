@@ -16,6 +16,7 @@
           'full-span': item.image.imageWidth > 2 * item.image.imageHeight,
           'rounded-lg, relative hover:cursor-help rounded-lg overflow-hidden': true
         }"
+        class="artwork-item"
         @mouseover="hover[item.id] = true"
         @mouseleave="hover[item.id] = false"
       >
@@ -25,6 +26,7 @@
           :class="{
             'opacity-50': hover[item.id]
           }"
+          class="artwork-image"
         />
         <button
           @click="deleteArtwork(item.id)"
@@ -196,7 +198,6 @@ const fetchCollection = () => {
     .then((response) => {
       loading.value = false
       artworkData.value = response.data
-      console.log(response.data)
     })
     .catch((error) => {
       console.error(error)

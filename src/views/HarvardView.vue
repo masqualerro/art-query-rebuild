@@ -192,6 +192,7 @@ const checkAllImagesLoaded = () => {
 
 // METHODS AND UTILS
 const gradientStyle = (item: harvardObject) => {
+  if (!item.colors) return
   let gradient = 'linear-gradient(to right, '
   gradient += item.colors
     .map((color, index) => `${color.color} ${(index / (item.colors.length - 1)) * 100}%`)
@@ -367,6 +368,7 @@ img {
                 >
                   {{ color.color }}<span v-if="index < item.colors.length - 1">, </span>
                 </p>
+                <p v-if="!item.colors" class="text-white">No color data available</p>
               </li>
               <li :style="gradientStyle(item)" class="p-1"></li>
             </ul>

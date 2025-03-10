@@ -75,8 +75,8 @@
             <div class="flex items-center gap-x-6">
               <BlackGlyph class="h-16 w-16 flex-none rounded-full ring-1 ring-gray-900/10 p-3" />
               <h1>
-                <span class="text-sm leading-6 text-gray-500">{{userStore.user?.name}}</span>
-                <br>
+                <span class="text-sm leading-6 text-gray-500">{{ userStore.user?.name }}</span>
+                <br />
                 <span class="mt-1 text-base font-semibold leading-6 text-gray-900">
                   Artwork Insights
                 </span>
@@ -354,7 +354,6 @@ const fetchColorInsights = () => {
     .then((response) => {
       loading.value = false
       colorData.value = response.data
-      console.log(colorData.value)
     })
     .catch((error) => {
       console.error(error)
@@ -375,11 +374,9 @@ const fetchCultureInsights = () => {
     .then((response) => {
       loading.value = false
       cultureData.value = response.data.slice(0, 3)
-      console.log(cultureData.value)
       cultureData.value?.forEach((culture) => {
         culture.country = findCountryByNationality(culture.culture)
       })
-      console.log(cultureData.value)
     })
     .catch((error) => {
       console.error(error)
@@ -396,16 +393,13 @@ const gradient = computed(() => {
   if (colorData.value?.insights) {
     const allColors = colorData.value.insights.flatMap((insight) => insight.hex_colors)
     if (allColors.length === 1) {
-      console.log('One color data')
       // If there's only one color, return it as the background color
       return allColors[0]
     } else {
-      console.log('Multiple color data')
       // If there's more than one color, return a linear gradient
       return `linear-gradient(to right, ${allColors.join(', ')})`
     }
   }
-  console.log('No color data')
   return '#000'
 })
 
@@ -434,7 +428,6 @@ const fetchStyleInsights = () => {
     .then((response) => {
       loading.value = false
       styleData.value = response.data.slice(0, 3)
-      console.log(styleData.value)
     })
     .catch((error) => {
       console.error(error)
@@ -456,7 +449,6 @@ const fetchArtistInsights = () => {
     .then((response) => {
       loading.value = false
       artistData.value = response.data.slice(0, 3)
-      console.log(artistData.value)
     })
     .catch((error) => {
       console.error(error)
