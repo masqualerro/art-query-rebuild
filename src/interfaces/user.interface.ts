@@ -1,8 +1,8 @@
 export interface userObject {
-  id: number
+  id: string
   email: string
   name: string
-  age: number
+  age?: number | null
   color: string
 }
 export interface newUser {

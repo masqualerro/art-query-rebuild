@@ -7,32 +7,16 @@
       :isWide="isWideModal"
       @close="toggleModal"
     />
-    <div v-if="artworkData.length > 0" class="gallery">
-      <div
-        v-for="item in artworkData"
-        :key="item.id"
-        :class="{
-          'wide-image': item.image.imageWidth > item.image.imageHeight,
-          'full-span': item.image.imageWidth > 2 * item.image.imageHeight,
-          'rounded-lg, relative hover:cursor-help rounded-lg overflow-hidden': true
-        }"
-        class="artwork-item"
-        @mouseover="hover[item.id] = true"
-        @mouseleave="hover[item.id] = false"
-      >
-        <img
-          :src="item.image.imageUrl"
-          :alt="item.image.imageAlt"
-          :class="{
-            'opacity-50': hover[item.id]
-          }"
-          class="artwork-image"
-        />
+    <div v-if="errorMessage" class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+      {{ errorMessage }}
+    </div>
+    <TumblrMasonryGallery v-if="galleryItems.length > 0" :items="galleryItems">
+      <template #default="{ item }">
         <button
           @click="deleteArtwork(item.id)"
-          v-show="hover[item.id]"
           type="button"
-          class="absolute bottom-2 left-2 inline-flex items-center gap-x-1.5 rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+          :aria-label="`Remove ${item.title} from your collection`"
+          class="absolute bottom-2 left-2 hidden items-center gap-x-1.5 rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80 group-hover:inline-flex group-focus-within:inline-flex"
         >
           <svg
             v-if="isSubmitting"
@@ -58,68 +42,39 @@
           <TrashIcon class="-ml-0.5 h-5 w-5" aria-hidden="true" />
         </button>
         <button
-          v-show="hover[item.id]"
           @click="
             toggleModal(
-              item.image.imageUrl,
-              item.image.imageAlt,
-              item.image.imageWidth > item.image.imageHeight
+              item.imageUrl || '',
+              item.imageAlt || item.title,
+              item.imageWidth !== null &&
+                item.imageHeight !== null &&
+                item.imageWidth > item.imageHeight
             )
           "
           type="button"
-          class="absolute bottom-2 right-2 inline-flex items-center rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+          :aria-label="`Zoom ${item.title}`"
+          class="absolute bottom-2 right-2 hidden items-center rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80 group-hover:inline-flex group-focus-within:inline-flex"
         >
           <MagnifyingGlassPlusIcon class="-ml-0.5 h-5 w-5" aria-hidden="true" />
         </button>
-        <ul
-          v-show="hover[item.id]"
-          class="absolute top-0 right-0 text-right text-sm text-red-600 bg-black w-full"
-        >
-          <li class="p-1 rounded-lg">
-            {{ `${item.title}, ${item.date}` }}
-          </li>
-          <li class="p-1 rounded-lg">
-            {{ item.artist }}
-          </li>
-          <li class="p-1 rounded-lg">
-            {{ item.medium }}
-          </li>
-          <li class="p-1 rounded-lg">
-            {{ item.culture }}
-          </li>
-          <li v-if="item.colors.hex" class="p-1">
-            <p
-              v-for="(color, index) in item.colors.hex"
-              :key="color.color"
-              :style="{ color: color.color, display: 'inline' }"
-            >
-              {{ color.color }}<span v-if="index < item.colors.hex.length - 1">, </span>
-            </p>
-          </li>
-          <li v-if="item.colors.hex" :style="gradientStyle(item)" class="p-1"></li>
-          <li class="p-1" v-if="item.colors.hsl">
-            <p :style="{ color: item.colors.hsl }">
-              {{ parseHSL(item.colors.hsl) }}
-            </p>
-          </li>
-          <li class="p-1" v-else-if="!item.colors.hex && !item.colors.hsl">
-            <p class="text-white">No color data available</p>
-          </li>
-          <li :style="{ background: item.colors.hsl }" class="p-1" v-if="item.colors.hsl"></li>
-        </ul>
-      </div>
-    </div>
+        <ArtworkHoverInfo
+          :source-label="sourceLabel(item.source)"
+          :items="getHoverItems(item)"
+          :color-info="getColorInfo(item)"
+        />
+      </template>
+    </TumblrMasonryGallery>
     <div v-else class="flex flex-col items-center justify-center h-52">
       <CubeTransparentIcon class="h-8 w-auto text-gray-400" />
       <p class="text-center text-sm font-semibold mt-4">
         You don't have any saved art yet.
         <br />
         <br />
-        <router-link class="text-indigo-600 hover:text-indigo-500" :to="`/chicago`"
+        <router-link class="text-indigo-600 hover:text-indigo-500" :to="`/museum/chicago`"
           >Browse the Chicago Art Institute API</router-link
         >
         <br />
-        <router-link class="text-indigo-600 hover:text-indigo-500" :to="`/harvard`"
+        <router-link class="text-indigo-600 hover:text-indigo-500" :to="`/museum/harvard`"
           >Browse the Harvard Art Museums API</router-link
         >
         <br />
@@ -130,79 +85,59 @@
       </p>
     </div>
   </div>
-  <div v-else class="flex flex-col gap-y-4 items-center justify-center">
-    <BlackGlyph class="animate-bounce h-8 w-auto" />
-    <p class="text-sm italic">Fetching saved art ...</p>
-  </div>
+  <LoadingState v-else label="Fetching saved art ..." class-name="mt-0" />
 </template>
-<style scoped>
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: auto;
-  grid-auto-flow: dense;
-  gap: 6px;
-}
-
-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.wide-image {
-  grid-column: span 2 / auto;
-}
-.full-span {
-  grid-column: span 4 / auto;
-}
-@media (max-width: 640px) {
-  .gallery {
-    grid-template-columns: repeat(1, 1fr);
-  }
-  .wide-image {
-    grid-column: span 1 / auto;
-  }
-}
-</style>
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import axios from 'axios'
+import { computed, ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import type { artworkObject } from '@/interfaces/artworks.interfaces'
-import BlackGlyph from '@/components/icons/BlackGlyph.vue'
+import LoadingState from '@/components/LoadingState.vue'
+import ArtworkHoverInfo from '@/components/gallery/ArtworkHoverInfo.vue'
+import TumblrMasonryGallery from '@/components/gallery/TumblrMasonryGallery.vue'
 import ZoomModal from '@/components/ZoomModal.vue'
 import { MagnifyingGlassPlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import { FaceSmileIcon, CubeTransparentIcon } from '@heroicons/vue/24/outline'
+import { deleteArtworkById, fetchUserCollection } from '@/services/artworkApi'
+import { getApiErrorMessage } from '@/services/apiClient'
 
-const api = import.meta.env.VITE_APP_API
 const userStore = useUserStore()
+userStore.hydrateSession()
 const loading = ref(true)
 const isSubmitting = ref(false)
-const hover: Record<string, boolean> = reactive({})
 const artworkData = ref<artworkObject[]>([])
 const isWideModal = ref(false)
 const modalOpen = ref(false)
 const imgUrl = ref('')
 const imgAlt = ref('')
+const errorMessage = ref('')
+
+const galleryItems = computed(() =>
+  artworkData.value
+    .filter((item) => item.imageUrl)
+    .map((item) => ({
+      ...item,
+      imageUrl: item.imageUrl || '',
+      imageAlt: item.imageAlt || item.title
+    }))
+)
 
 const fetchCollection = () => {
-  const token = localStorage.getItem('token')
-
-  const config = {
-    headers: { Authorization: `Bearer ${token}` }
+  if (!userStore.user) {
+    loading.value = false
+    errorMessage.value = 'Unable to load your collection. Please sign in again.'
+    return
   }
 
-  axios
-    .get(`${api}/artworks/user/${userStore.user?.id}`, config)
-    .then((response) => {
+  fetchUserCollection()
+    .then((artworks) => {
       loading.value = false
-      artworkData.value = response.data
+      artworkData.value = artworks
+      errorMessage.value = ''
     })
     .catch((error) => {
       console.error(error)
       loading.value = false
-      window.alert(error)
+      errorMessage.value = getApiErrorMessage(error, 'Unable to load your saved art.')
     })
 }
 const toggleModal = (clickedUrl: string, clickedAlt: string, isWide: boolean) => {
@@ -219,13 +154,9 @@ const toggleModal = (clickedUrl: string, clickedAlt: string, isWide: boolean) =>
     imgAlt.value = clickedAlt
   }
 }
-const deleteArtwork = (id: number) => {
+const deleteArtwork = (id: string) => {
   isSubmitting.value = true
-  const token = localStorage.getItem('token')
-
-  const config = {
-    headers: { Authorization: `Bearer ${token}` }
-  }
+  errorMessage.value = ''
 
   // Store the original artworkData array
   const originalArtworkData = artworkData.value
@@ -233,8 +164,7 @@ const deleteArtwork = (id: number) => {
   // Optimistically remove the artwork from the artworkData array
   artworkData.value = artworkData.value.filter((artwork) => artwork.id !== id)
 
-  axios
-    .delete(`${api}/artworks/${id}`, config)
+  deleteArtworkById(id)
     .then(() => {
       isSubmitting.value = false
     })
@@ -243,22 +173,65 @@ const deleteArtwork = (id: number) => {
       isSubmitting.value = false
       // If the axios call fails, revert the artworkData array to its original state
       artworkData.value = originalArtworkData
+      errorMessage.value = getApiErrorMessage(error, 'Unable to delete this artwork.')
     })
 }
-const gradientStyle = (item: artworkObject) => {
+function sourceLabel(source: artworkObject['source']) {
+  if (source === 'HARVARD') return 'Harvard Art Museums'
+  if (source === 'CHICAGO') return 'Art Institute of Chicago'
+  if (source === 'SMITHSONIAN') return 'Smithsonian'
+  return 'Cleveland Museum of Art'
+}
+
+function getHoverItems(item: artworkObject) {
+  return [
+    `${item.title}${item.dateText ? `, ${item.dateText}` : ''}`,
+    item.artistName || 'Unknown Artist',
+    item.medium,
+    item.culture
+  ].filter(Boolean) as string[]
+}
+
+function getColorInfo(item: artworkObject) {
+  const hexColors = item.colors.hex ?? []
+
+  if (hexColors.length) {
+    return {
+      values: hexColors.map((color) => color.color),
+      gradient: colorGradient(item)
+    }
+  }
+
+  if (item.colors.hsl) {
+    return {
+      values: [formatHsl(item.colors.hsl)],
+      gradient: item.colors.hsl
+    }
+  }
+
+  return {
+    values: [],
+    gradient: null
+  }
+}
+
+const colorGradient = (item: artworkObject) => {
+  const colors = item.colors.hex ?? []
+  if (!colors.length) return null
   let gradient = 'linear-gradient(to right, '
-  gradient += item.colors.hex
-    .map((color, index) => `${color.color} ${(index / (item.colors.hex.length - 1)) * 100}%`)
+  gradient += colors
+    .map((color, index) => `${color.color} ${(index / (colors.length - 1)) * 100}%`)
     .join(', ')
   gradient += ')'
-  return { background: gradient }
+  return gradient
 }
-function parseHSL(hsl: string) {
+
+function formatHsl(hsl: string) {
   const match = hsl.match(/hsl\((\d+),\s*(\d+)%?,\s*(\d+)%?\)/i)
   if (match) {
     return `hue: ${match[1]}, saturation: ${match[2]}, lightness: ${match[3]}`
   }
-  return { hue: '', saturation: '', lightness: '' }
+  return hsl
 }
 
 fetchCollection()

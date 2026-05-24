@@ -1,9 +1,17 @@
 describe('Login Page with Token Validation', () => {
   beforeEach(() => {
     // Mock the token validation endpoint to return a valid response
-    cy.intercept('GET', '**/auth/is-token-expired', {
+    cy.intercept('GET', '**/auth/me', {
       statusCode: 200,
-      body: false // Return false to indicate that the token is not expired
+      body: {
+        user: {
+          id: 'user_1',
+          name: 'John Doe',
+          email: 'john.doe@example.com',
+          age: 30,
+          color: '#ff0000'
+        }
+      }
     }).as('tokenValidation')
 
     // Visit the login page
@@ -15,9 +23,9 @@ describe('Login Page with Token Validation', () => {
     cy.intercept('POST', '**/auth/login', {
       statusCode: 200,
       body: {
-        access_token: 'fake_token',
+        token: 'fake_token',
         user: {
-          id: 1,
+          id: 'user_1',
           name: 'John Doe',
           email: 'john.doe@example.com',
           age: 30,
@@ -27,22 +35,22 @@ describe('Login Page with Token Validation', () => {
     }).as('loginRequest')
 
     // Intercept the request to fetch the user's collection data before navigating
-    cy.intercept('GET', '**/artworks/user/*', (req) => {
+    cy.intercept('GET', '**/artworks/collection', (req) => {
       // Check that header token matches one from login
       expect(req.headers.authorization).to.eq('Bearer fake_token')
 
       // Mock response for artwork data
       req.reply({
         statusCode: 200,
-        body: [
+        body: {
+          artworks: [
           {
-            id: 101,
-            museum_id: 1,
-            artwork_id: 5001,
+            id: 'artwork_101',
+            source: 'CHICAGO',
+            externalId: '5001',
             title: 'Starry Night',
-            artist: 'Vincent van Gogh',
-            date: '1889',
-            artwork_type: 'Painting',
+            artistName: 'Vincent van Gogh',
+            dateText: '1889',
             classification: {
               period: 'Post-Impressionism',
               division: 'Fine Arts',
@@ -70,24 +78,19 @@ describe('Login Page with Token Validation', () => {
             },
             culture: 'Dutch',
             styles: ['Post-Impressionism'],
-            image: {
-              id: 1,
-              artwork_id: 5001,
-              imageUrl:
-                'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1200px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
-              imageAlt: 'Starry Night by Vincent van Gogh',
-              imageWidth: 800,
-              imageHeight: 600
-            }
+            imageUrl:
+              'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1200px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
+            imageAlt: 'Starry Night by Vincent van Gogh',
+            imageWidth: 800,
+            imageHeight: 600
           },
           {
-            id: 102,
-            museum_id: 2,
-            artwork_id: 5002,
+            id: 'artwork_102',
+            source: 'HARVARD',
+            externalId: '5002',
             title: 'Mona Lisa',
-            artist: 'Leonardo da Vinci',
-            date: '1503',
-            artwork_type: 'Painting',
+            artistName: 'Leonardo da Vinci',
+            dateText: '1503',
             classification: {
               period: 'Renaissance',
               division: 'Fine Arts',
@@ -115,17 +118,14 @@ describe('Login Page with Token Validation', () => {
             },
             culture: 'Italian',
             styles: ['High Renaissance'],
-            image: {
-              id: 2,
-              artwork_id: 5002,
-              imageUrl:
-                'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/1200px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg',
-              imageAlt: 'Mona Lisa by Leonardo da Vinci',
-              imageWidth: 800,
-              imageHeight: 600
-            }
+            imageUrl:
+              'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/1200px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg',
+            imageAlt: 'Mona Lisa by Leonardo da Vinci',
+            imageWidth: 800,
+            imageHeight: 600
           }
         ]
+        }
       })
     }).as('fetchCollection')
 

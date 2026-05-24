@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import {
   HeartIcon,
   MagnifyingGlassPlusIcon,
@@ -12,36 +11,34 @@ import type { harvardObject, paginationObject } from '@/interfaces/harvard.inter
 import { useUserStore } from '@/stores/user'
 import { useArtworkStore } from '@/stores/artworks'
 import ZoomModal from '@/components/ZoomModal.vue'
-import BlackGlyph from '@/components/icons/BlackGlyph.vue'
+import LoadingState from '@/components/LoadingState.vue'
+import ArtworkHoverInfo from '@/components/gallery/ArtworkHoverInfo.vue'
+import TumblrMasonryGallery from '@/components/gallery/TumblrMasonryGallery.vue'
+import {
+  deleteArtworkBySource,
+  fetchHarvardNextPage,
+  fetchSavedArtworkMap,
+  saveArtwork as saveArtworkRequest,
+  searchHarvardArtworks
+} from '@/services/artworkApi'
+import { isCanceledRequest, isUnauthorizedError } from '@/services/apiClient'
 
 const userStore = useUserStore()
 const artworkStore = useArtworkStore()
 const loading = ref(true)
 
 onMounted(() => {
-  if (!userStore.user) {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      const noPassword = JSON.parse(storedUser)
-      delete noPassword.password
-      userStore.setUser(noPassword)
-      mapArtworks()
-    }
-  } else {
+  userStore.hydrateSession()
+  if (userStore.user) {
     mapArtworks()
   }
 })
 
 const router = useRouter()
-const api = import.meta.env.VITE_APP_API
-const harvardApi = import.meta.env.VITE_HARVARD_API_KEY
 const searchTerm = computed(() => (router.currentRoute.value.query.searchTerm as string) || '')
-const hover: Record<string, boolean> = reactive({})
 const harvardData = ref<harvardObject[]>([])
-const imageLoadCount = ref(0)
-const imageErrorCount = ref(0)
 const isSubmitting = ref(false)
-const savedArtworks = ref<number[]>([])
+const savedArtworks = ref<string[]>([])
 const isWideModal = ref(false)
 const modalOpen = ref(false)
 const imgUrl = ref('')
@@ -49,156 +46,135 @@ const imgAlt = ref('')
 const loadingNext = ref(false)
 const pagination = ref({} as paginationObject)
 let nextUrl = ref('')
+let searchController: AbortController | null = null
+
+const galleryItems = computed(() =>
+  harvardData.value.map((item) => ({
+    ...item,
+    id: String(item.id),
+    imageUrl: item.primaryimageurl,
+    imageAlt: item.images[0]?.alttext || item.title
+  }))
+)
 
 const getHarvardData = async (searchTerm: string) => {
-  imageLoadCount.value = 0
-  imageErrorCount.value = 0
+  searchController?.abort()
+  searchController = new AbortController()
   loading.value = true
-  if (searchTerm !== '') {
-    setTimeout(() => {
-      loading.value = false
-    }, 3000)
-  }
 
   try {
-    const response = await axios.get(`https://api.harvardartmuseums.org/object`, {
-      params: {
-        apikey: harvardApi,
-        q: searchTerm, // Search term
-        fields:
-          'title,dated,people,primaryimageurl,culture,colors,color,images,classification,medium,period,division,url,rank',
-        sort: 'rank', // Sort by relevance
-        size: 50, // Number of results,
-        classification: 'Paintings'
-      }
-    })
-    const objectsWithPrimaryImageUrl = response.data.records.filter(
+    const data = await searchHarvardArtworks(searchTerm, { signal: searchController.signal })
+    const objectsWithPrimaryImageUrl = data.records.filter(
       (object: harvardObject) =>
         object.primaryimageurl && object.images[0] && object.images[0].width >= 600
     )
     harvardData.value = objectsWithPrimaryImageUrl
-    pagination.value = response.data.info
-    nextUrl.value = response.data.info.next
-    if (harvardData.value.length === 0) {
-      loading.value = false
-    }
+    pagination.value = data.info
+    nextUrl.value = data.info.next ?? ''
   } catch (error) {
+    if (isCanceledRequest(error)) return
     console.error(error)
+    harvardData.value = []
+    nextUrl.value = ''
+  } finally {
+    loading.value = false
   }
 }
 
 const loadMoreHarvardData = async () => {
-  if (nextUrl.value) {
+  if (nextUrl.value && !loadingNext.value) {
     loadingNext.value = true
     try {
-      const response = await axios.get(nextUrl.value)
-      const objectsWithPrimaryImageUrl = response.data.records.filter(
+      const data = await fetchHarvardNextPage(nextUrl.value)
+      const objectsWithPrimaryImageUrl = data.records.filter(
         (object: harvardObject) =>
           object.primaryimageurl && object.images[0] && object.images[0].width >= 600
       )
       harvardData.value = [...harvardData.value, ...objectsWithPrimaryImageUrl] // Append the new data
-      pagination.value = response.data.info
-      nextUrl.value = response.data.info.next // Update the "next" URL
+      pagination.value = data.info
+      nextUrl.value = data.info.next ?? '' // Update the "next" URL
       loadingNext.value = false
     } catch (error) {
       console.error(error)
+      loadingNext.value = false
     }
   }
 }
 
 const saveArtwork = (artwork: harvardObject) => {
-  let classificationArray = [artwork.period, artwork.division, artwork.classification].filter(
-    Boolean
-  )
-  const data = {
-    museum_id: 1,
-    artwork_id: artwork.id,
-    title: artwork.title,
-    artist: artwork.people && artwork.people.length > 0 ? artwork.people[0].displayname : '',
-    date: artwork.dated,
-    culture: artwork.culture,
-    medium: artwork.medium,
-    colors: JSON.stringify({
-      hex: artwork.colors,
-      hsl: null
-    }),
-    styles: JSON.stringify(classificationArray),
-    image: {
-      artwork_id: artwork.id,
-      imageUrl: artwork.primaryimageurl,
-      imageAlt: artwork.images[0].alttext || artwork.title,
-      imageWidth: artwork.images[0].width,
-      imageHeight: artwork.images[0].height
-    }
+  if (!userStore.user) {
+    router.push('/login')
+    return
   }
+
+  const externalId = String(artwork.id)
+  const isSaved =
+    artworkStore.harvard.includes(externalId) || savedArtworks.value.includes(externalId)
   isSubmitting.value = true
-  const token = localStorage.getItem('token')
 
-  const config = {
-    headers: { Authorization: `Bearer ${token}` }
-  }
+  const request = isSaved
+    ? deleteArtworkBySource('HARVARD', externalId)
+    : saveArtworkRequest({ source: 'HARVARD', artwork })
 
-  axios
-    .post(`${api}/artworks/${userStore.user?.id}`, data, config)
+  request
     .then(() => {
-      isSubmitting.value = false
-      savedArtworks.value.push(artwork.id)
-      useArtworkStore().addHarvardArtwork(artwork.id)
+      if (isSaved) {
+        savedArtworks.value = savedArtworks.value.filter((id) => id !== externalId)
+        artworkStore.removeArtwork('HARVARD', externalId)
+      } else {
+        savedArtworks.value.push(externalId)
+        artworkStore.addHarvardArtwork(externalId)
+      }
     })
     .catch((error) => {
-      if (error.response.status === 401) {
+      if (isUnauthorizedError(error)) {
         router.push('/login')
-        isSubmitting.value = false
       } else {
         console.error(error)
-        isSubmitting.value = false
       }
+    })
+    .finally(() => {
+      isSubmitting.value = false
     })
 }
 
 const mapArtworks = () => {
-  const token = localStorage.getItem('token')
+  if (!userStore.user) return
 
-  const config = {
-    headers: { Authorization: `Bearer ${token}` }
-  }
-
-  axios
-    .get(`${api}/artworks/map/${userStore.user?.id}`, config)
-    .then((response) => {
-      savedArtworks.value = response.data
-      useArtworkStore().setHarvardArtworks(response.data)
+  fetchSavedArtworkMap()
+    .then((savedMap) => {
+      savedArtworks.value = savedMap.harvard
+      useArtworkStore().setHarvardArtworks(savedMap.harvard)
     })
     .catch((error) => {
       console.error(error)
     })
 }
 
-const handleImageLoad = (url: string) => {
-  imageLoadCount.value++
-  checkAllImagesLoaded()
-}
+const getHoverItems = (item: harvardObject) =>
+  [
+    `${item.title}${item.dated ? `, ${item.dated}` : ''}`,
+    item.people?.[0]?.displayname,
+    item.medium,
+    item.culture
+  ].filter(Boolean) as string[]
 
-const handleImageError = (url: string) => {
-  imageErrorCount.value++
-  checkAllImagesLoaded()
-}
-
-const checkAllImagesLoaded = () => {
-  if (imageLoadCount.value + imageErrorCount.value === harvardData.value.length) {
-    loading.value = false
+const getColorInfo = (item: harvardObject) => {
+  if (!item.colors?.length) {
+    return {
+      values: [],
+      gradient: null
+    }
   }
-}
 
-// METHODS AND UTILS
-const gradientStyle = (item: harvardObject) => {
-  if (!item.colors) return
-  let gradient = 'linear-gradient(to right, '
-  gradient += item.colors
+  const gradient = `linear-gradient(to right, ${item.colors
     .map((color, index) => `${color.color} ${(index / (item.colors.length - 1)) * 100}%`)
-    .join(', ')
-  gradient += ')'
-  return { background: gradient }
+    .join(', ')})`
+
+  return {
+    values: item.colors.map((color) => color.color),
+    gradient
+  }
 }
 
 const toggleModal = (clickedUrl: string, clickedAlt: string, isWide: boolean) => {
@@ -224,36 +200,6 @@ watch(
   { immediate: true }
 )
 </script>
-<style scoped>
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: auto;
-  grid-auto-flow: dense;
-  gap: 6px;
-}
-
-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.wide-image {
-  grid-column: span 2 / auto;
-}
-.full-span {
-  grid-column: span 4 / auto;
-}
-@media (max-width: 640px) {
-  .gallery {
-    grid-template-columns: repeat(1, 1fr);
-  }
-  .wide-image {
-    grid-column: span 1 / auto;
-  }
-}
-</style>
 <template>
   <main>
     <ZoomModal
@@ -265,33 +211,19 @@ img {
     />
     <div v-show="!loading">
       <div v-show="harvardData.length > 0">
-        <div class="gallery">
-          <div
-            v-for="item in harvardData"
-            :key="item.id"
-            :class="{
-              'wide-image': item.images[0].width > item.images[0].height,
-              'full-span': item.images[0].width > 2 * item.images[0].height,
-              'rounded-lg, relative hover:cursor-help rounded-lg overflow-hidden': true
-            }"
-            @mouseover="hover[item.id] = true"
-            @mouseleave="hover[item.id] = false"
-          >
-            <img
-              :src="item.primaryimageurl"
-              :alt="item.images[0].alttext"
-              :class="{
-                'opacity-50': hover[item.id]
-              }"
-              @load="handleImageLoad(item.primaryimageurl)"
-              @error="handleImageError(item.primaryimageurl)"
-            />
+        <TumblrMasonryGallery
+          :items="galleryItems"
+          :can-load-more="Boolean(nextUrl)"
+          :loading-more="loadingNext"
+          require-scroll-before-load-more
+          @load-more="loadMoreHarvardData"
+        >
+          <template #default="{ item }">
             <button
-              :disabled="artworkStore.harvard.includes(item.id) || savedArtworks.includes(item.id)"
-              v-show="hover[item.id]"
+              :disabled="isSubmitting"
               @click="saveArtwork(item)"
               type="button"
-              class="absolute bottom-2 left-2 inline-flex items-center gap-x-1.5 rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+              class="absolute bottom-2 left-2 hidden items-center gap-x-1.5 rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-70 group-hover:inline-flex group-focus-within:inline-flex"
             >
               <svg
                 v-if="isSubmitting"
@@ -318,94 +250,41 @@ img {
                 v-else
                 :class="{
                   'text-red-600 fill-red-600':
-                    artworkStore.harvard.includes(item.id) || savedArtworks.includes(item.id),
+                    artworkStore.harvard.includes(String(item.id)) ||
+                    savedArtworks.includes(String(item.id)),
                   'text-white':
-                    !artworkStore.harvard.includes(item.id) || !savedArtworks.includes(item.id)
+                    !artworkStore.harvard.includes(String(item.id)) &&
+                    !savedArtworks.includes(String(item.id))
                 }"
                 class="-ml-0.5 h-5 w-5"
                 aria-hidden="true"
               />
             </button>
             <button
-              v-show="hover[item.id]"
               @click="
                 toggleModal(
                   item.primaryimageurl,
-                  item.images[0].alttext,
-                  item.images[0].width > item.images[0].height
+                  item.images[0]?.alttext || item.title,
+                  item.images[0]?.width > item.images[0]?.height
                 )
               "
               type="button"
-              class="absolute bottom-2 right-2 inline-flex items-center rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80"
+              class="absolute bottom-2 right-2 hidden items-center rounded-md bg-black px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-black/80 group-hover:inline-flex group-focus-within:inline-flex"
             >
               <MagnifyingGlassPlusIcon class="-ml-0.5 h-5 w-5" aria-hidden="true" />
             </button>
-            <ul
-              v-show="hover[item.id]"
-              class="absolute top-0 right-0 text-right text-sm text-red-600 bg-black w-full"
-            >
-              <li class="p-1 rounded-lg">
-                {{ `${item.title}, ${item.dated}` }}
-              </li>
-              <li class="p-1 rounded-lg">
-                {{
-                  item.people && item.people.length > 0
-                    ? item.people[0].displayname
-                    : 'Fallback value'
-                }}
-              </li>
-              <li class="p-1 rounded-lg">
-                {{ item.medium }}
-              </li>
-              <li class="p-1 rounded-lg">
-                {{ item.culture }}
-              </li>
-              <li class="p-1">
-                <p
-                  v-for="(color, index) in item.colors"
-                  :key="color.color"
-                  :style="{ color: color.color, display: 'inline' }"
-                >
-                  {{ color.color }}<span v-if="index < item.colors.length - 1">, </span>
-                </p>
-                <p v-if="!item.colors" class="text-white">No color data available</p>
-              </li>
-              <li :style="gradientStyle(item)" class="p-1"></li>
-            </ul>
-          </div>
-        </div>
-        <div class="flex items-center justify-center mt-4">
-          <button
-            v-if="nextUrl"
-            @click="loadMoreHarvardData"
-            type="button"
-            class="flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-          >
-            <svg
-              v-if="loadingNext"
-              class="animate-spin -ml-1 mr-3 h-5 w-5 text-black"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <span v-if="loadingNext">Loading ...</span>
-            <span v-else>Load More</span>
-          </button>
-        </div>
+            <ArtworkHoverInfo
+              source-label="Harvard Art Museums"
+              :items="getHoverItems(item)"
+              :color-info="getColorInfo(item)"
+            />
+          </template>
+        </TumblrMasonryGallery>
+        <LoadingState
+          v-if="loadingNext"
+          label="Loading more art ..."
+          class-name="py-8 text-zinc-500"
+        />
       </div>
       <div v-show="harvardData.length === 0" class="flex flex-col items-center justify-center h-52">
         <FaceFrownIcon class="h-8 w-auto text-gray-400" />
@@ -415,7 +294,7 @@ img {
           <br />
           <router-link
             class="text-indigo-600 hover:text-indigo-500"
-            :to="`/chicago?searchTerm=${searchTerm}`"
+            :to="`/museum/chicago?searchTerm=${searchTerm}`"
             >Search with the Chicago Art Institute API</router-link
           >
           <br />
@@ -426,9 +305,6 @@ img {
         </p>
       </div>
     </div>
-    <div v-show="loading" class="flex flex-col gap-y-4 items-center justify-center mt-10">
-      <BlackGlyph class="animate-bounce h-8 w-auto" />
-      <p class="text-sm italic">Fetching Art ...</p>
-    </div>
+    <LoadingState v-show="loading" />
   </main>
 </template>

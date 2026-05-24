@@ -103,13 +103,12 @@ import { email, required } from '@vuelidate/validators'
 import useValidate from '@vuelidate/core'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import axios from 'axios'
 import BlackGlyph from '@/components/icons/BlackGlyph.vue'
+import { login as loginRequest } from '@/services/authApi'
 
 export default {
   data() {
     return {
-      api: null,
       error: false,
       loading: false
     }
@@ -147,28 +146,20 @@ export default {
       this.v$.$validate()
       if (!this.v$.$error) {
         this.loading = true
-        axios
-          .post(this.api + '/auth/login', data)
+        loginRequest(data)
           .then((response) => {
             this.v$.$reset()
             this.error = false
             const userObject = {
-              id: response.data.user.id,
-              name: response.data.user.name,
-              email: response.data.user.email,
-              age: response.data.user.age,
-              color: response.data.user.color
+              id: response.user.id,
+              name: response.user.name,
+              email: response.user.email,
+              age: response.user.age,
+              color: response.user.color
             }
-            // Handle and response
-            localStorage.setItem('token', response.data.access_token)
-            localStorage.setItem('user', JSON.stringify(response.data.user))
-            localStorage.setItem('loggedIn', 'true')
-
             // commit to pinia store
             const userStore = useUserStore()
-            userStore.setUser(userObject)
-            userStore.setToken(response.data.access_token)
-            userStore.setLoggedIn(true)
+            userStore.setSession(userObject, response.token)
 
             // Redirect success user
             this.$router.push('/collection/display')
@@ -182,9 +173,6 @@ export default {
           })
       }
     }
-  },
-  created() {
-    this.api = import.meta.env.VITE_APP_API
   }
 }
 </script>

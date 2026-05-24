@@ -3,7 +3,7 @@ import LoginView from '@/views/userJourney/LoginView.vue'
 import CollectionHome from '@/views/collection/CollectionHome.vue'
 import type { RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import axios from 'axios'
+import { getAuthenticatedUser } from '@/services/authApi'
 
 async function guardMyRoute(
   to: RouteLocationNormalized,
@@ -11,35 +11,19 @@ async function guardMyRoute(
   next: NavigationGuardNext
 ) {
   const userStore = useUserStore()
-  const api = import.meta.env.VITE_APP_API
   let isAuthenticated = false
 
-  if (!userStore.user) {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      const noPassword = JSON.parse(storedUser)
-      delete noPassword.password
-      userStore.setUser(noPassword)
-    }
-  }
+  userStore.hydrateSession()
 
-  const token = localStorage.getItem('token')
-  if (token) {
-    const config = {
-      headers: { Authorization: `Bearer ${token}` }
-    }
-
+  if (userStore.accessToken) {
     try {
-      const response = await axios.get(`${api}/auth/is-token-expired`, config)
-      if (!response.data) {
-        userStore.setLoggedIn(true)
-        isAuthenticated = true
-      } else {
-        userStore.setLoggedIn(false)
-      }
+      const user = await getAuthenticatedUser()
+      userStore.setUser(user)
+      userStore.setLoggedIn(true)
+      isAuthenticated = true
     } catch (error) {
       console.error(error)
-      userStore.setLoggedIn(false)
+      userStore.clearSession()
     }
   }
 
@@ -58,8 +42,6 @@ function signOutGuard(
   // Perform sign out actions here
   const userStore = useUserStore()
   userStore.signOut()
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
   next('/login') // Redirect to login after signing out
 }
 
@@ -90,6 +72,7 @@ const router = createRouter({
     {
       path: '/profile',
       name: 'profile',
+      beforeEnter: guardMyRoute,
       component: () => import('../views/ProfileView.vue')
     },
     {
@@ -99,13 +82,44 @@ const router = createRouter({
     },
     {
       path: '/chicago',
+      redirect: (to) => ({ path: '/museum/chicago', query: to.query })
+    },
+    {
+      path: '/harvard',
+      redirect: (to) => ({ path: '/museum/harvard', query: to.query })
+    },
+    {
+      path: '/smithsonian',
+      redirect: (to) => ({ path: '/museum/smithsonian', query: to.query })
+    },
+    {
+      path: '/cleveland',
+      redirect: (to) => ({ path: '/museum/cleveland', query: to.query })
+    },
+    {
+      path: '/museum/chicago',
       name: 'chicago art institute',
       component: () => import('../views/ChicagoView.vue')
     },
     {
-      path: '/harvard',
+      path: '/museum/harvard',
       name: 'harvard art museums',
       component: () => import('../views/HarvardView.vue')
+    },
+    {
+      path: '/museum/smithsonian',
+      name: 'smithsonian',
+      component: () => import('../views/SmithsonianView.vue')
+    },
+    {
+      path: '/museum/cleveland',
+      name: 'cleveland',
+      component: () => import('../views/ClevelandView.vue')
+    },
+    {
+      path: '/discover',
+      name: 'discover',
+      component: () => import('../views/DiscoverView.vue')
     },
     {
       path: '/collection',

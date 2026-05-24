@@ -1,22 +1,24 @@
 export interface artworkObject {
-  id: number
-  museum_id: number
-  artwork_id: number
+  id: string
+  source: 'HARVARD' | 'CHICAGO' | 'SMITHSONIAN' | 'cleveland'
+  externalId: string
   title: string
-  artist: string
-  date: string
-  artwork_type: any
-  classification: classificationObject
-  medium: string
+  artistName: string | null
+  dateText: string | null
+  classification: classificationObject | null
+  medium: string | null
   colors: colorObject
-  culture: string
-  styles: any
-  image: imageObect
+  culture: string | null
+  styles: string[]
+  imageUrl: string | null
+  imageAlt: string | null
+  imageWidth: number | null
+  imageHeight: number | null
 }
 
 interface colorObject {
-  hex: hexObject[]
-  hsl: any
+  hex: hexObject[] | null
+  hsl: string | null
 }
 
 interface hexObject {
@@ -27,17 +29,13 @@ interface hexObject {
   css3: string
 }
 
-interface imageObect {
-  id: number
-  artwork_id: number
-  imageUrl: string
-  imageAlt: string
-  imageWidth: number
-  imageHeight: number
-}
-
 interface classificationObject {
-  period: string
-  division: string
-  type: string
+  period?: string | null
+  division?: string | null
+  type?: string | null
+  classifications?: string[]
+  department?: string | null
+  dimensions?: string | null
+  sourceUrl?: string | null
+  description?: string | null
 }

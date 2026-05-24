@@ -170,14 +170,13 @@ import { computed, reactive } from 'vue'
 import { email, required } from '@vuelidate/validators'
 import useValidate from '@vuelidate/core'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
 import type { newUser } from '@/interfaces/user.interface'
 import BlackGlyph from '@/components/icons/BlackGlyph.vue'
+import { register } from '@/services/authApi'
 
 export default {
   data() {
     return {
-      api: null,
       error: false,
       loading: false,
       userExists: false
@@ -230,8 +229,7 @@ export default {
     },
     createAccount(data: newUser) {
       this.loading = true
-      axios
-        .post(this.api + '/users', data)
+      register(data)
         .then(() => {
           this.loading = false
           this.error = false
@@ -246,9 +244,6 @@ export default {
           console.error(error)
         })
     }
-  },
-  created() {
-    this.api = import.meta.env.VITE_APP_API
   }
 }
 </script>

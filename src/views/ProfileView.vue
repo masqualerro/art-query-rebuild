@@ -115,10 +115,10 @@ import { computed, reactive } from 'vue'
 import { email, required } from '@vuelidate/validators'
 import useValidate from '@vuelidate/core'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/user'
 import BlackGlyph from '@/components/icons/BlackGlyph.vue'
+import { updateProfile } from '@/services/userApi'
 
 export default {
   components: {
@@ -126,14 +126,15 @@ export default {
   },
   data() {
     return {
-      api: null,
       error: false,
       loading: false,
       userExists: false
     }
   },
   setup() {
-    const { user: storeUser } = storeToRefs(useUserStore())
+    const userStore = useUserStore()
+    userStore.hydrateSession()
+    const { user: storeUser } = storeToRefs(userStore)
     const router = useRouter()
     const route = useRoute()
     const state = reactive({
@@ -145,18 +146,8 @@ export default {
     if (storeUser.value) {
       state.email = storeUser.value.email
       state.name = storeUser.value.name
-      state.age = storeUser.value.age
+      state.age = storeUser.value.age ?? 0
       state.color = storeUser.value.color
-    } else {
-      const localUserString = localStorage.getItem('user')
-      if (localUserString !== null) {
-        const localUser = JSON.parse(localUserString)
-        storeUser.value = localUser
-        state.email = localUser.email
-        state.name = localUser.name
-        state.age = localUser.age
-        state.color = localUser.color
-      }
     }
     const rules = computed(() => {
       return {
@@ -190,27 +181,11 @@ export default {
       }
     },
     patchUser(data: any) {
-      const token = localStorage.getItem('token')
-
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-
       this.loading = true
-      axios
-        .patch(this.api + '/users/' + (this.storeUser ? this.storeUser.id : ''), data, config)
-        .then((response) => {
+      updateProfile(data)
+        .then((userObject) => {
           this.loading = false
           this.error = false
-          const userObject = {
-            id: response.data.user.id,
-            name: response.data.user.name,
-            email: response.data.user.email,
-            age: response.data.user.age,
-            color: response.data.user.color
-          }
-          // Handle and response
-          localStorage.setItem('user', JSON.stringify(userObject))
           useUserStore().setUser(userObject)
         })
         .catch((error) => {
@@ -219,9 +194,6 @@ export default {
           console.error(error)
         })
     }
-  },
-  created() {
-    this.api = import.meta.env.VITE_APP_API
   }
 }
 </script>

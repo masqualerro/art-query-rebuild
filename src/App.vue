@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import axios from 'axios'
 import { RouterView, useRouter } from 'vue-router'
 import {
   Disclosure,
@@ -11,73 +10,62 @@ import {
   MenuItems
 } from '@headlessui/vue'
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
-import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
-import { ref, watch, onMounted } from 'vue'
+import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useUserStore } from './stores/user'
 import WhiteGlyph from './components/icons/WhiteGlyph.vue'
 import DarkModeToggle from './components/DarkModeToggle.vue'
+import { getAuthenticatedUser } from './services/authApi'
 
 const navItems = [
-  { name: 'Collection', href: '/collection' },
-  { name: 'Chicago Art Institute', href: '/chicago' },
-  { name: 'Harvard Art Museums', href: '/harvard' },
-  { name: 'About', href: '/about' }
+  { name: 'Collection', href: '/collection' }
+]
+
+const museumItems = [
+  { name: 'Harvard Art Museums', href: '/museum/harvard', routeName: 'harvard art museums' },
+  { name: 'Art Institute of Chicago', href: '/museum/chicago', routeName: 'chicago art institute' },
+  { name: 'Smithsonian', href: '/museum/smithsonian', routeName: 'smithsonian' },
+  { name: 'Cleveland Museum of Art', href: '/museum/cleveland', routeName: 'cleveland' },
+  { name: 'Discover', href: '/discover', routeName: 'discover' }
 ]
 
 const userStore = useUserStore()
 const router = useRouter()
 const route = router.currentRoute
-const api = import.meta.env.VITE_APP_API
-const userLoggedIn = ref(false)
+const userLoggedIn = computed(() => userStore.loggedIn)
+const museumsActive = computed(
+  () =>
+    route.value.path.startsWith('/museum') ||
+    route.value.path === '/discover' ||
+    museumItems.some((item) => item.routeName === route.value.name)
+)
 
-onMounted(() => {
-  if (!userStore.user) {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      const noPassword = JSON.parse(storedUser)
-      delete noPassword.password
-      userStore.setUser(noPassword)
-    }
-  }
-  if (localStorage.getItem('token')) {
-    const token = localStorage.getItem('token')
+onMounted(async () => {
+  userStore.hydrateSession()
 
-    const config = {
-      headers: { Authorization: `Bearer ${token}` }
-    }
+  if (!userStore.accessToken) return
 
-    axios
-      .get(`${api}/auth/is-token-expired`, config)
-      .then((response) => {
-        if (response.data) {
-          localStorage.setItem('loggedIn', 'false')
-          userLoggedIn.value = false
-          userStore.setLoggedIn(false)
-        } else {
-          localStorage.setItem('loggedIn', 'true')
-          userStore.setLoggedIn(true)
-          userLoggedIn.value = true
-        }
-      })
-      .catch((error) => {
-        console.error(error)
-      })
+  try {
+    const user = await getAuthenticatedUser()
+    userStore.setUser(user)
+    userStore.setLoggedIn(true)
+  } catch (error) {
+    console.error(error)
+    userStore.clearSession()
   }
 })
-
-watch(
-  () => userStore.loggedIn,
-  (newValue) => {
-    userLoggedIn.value = newValue
-    localStorage.setItem('loggedIn', newValue ? 'true' : 'false')
-  }
-)
 
 const searchTerm = ref('')
 const apiSelection = ref('Harvard')
 const onSearch = () => {
   if (apiSelection.value === 'Chicago') {
     router.push({ name: 'chicago art institute', query: { searchTerm: searchTerm.value } })
+  } else if (apiSelection.value === 'Smithsonian') {
+    router.push({ name: 'smithsonian', query: { searchTerm: searchTerm.value } })
+  } else if (apiSelection.value === 'Cleveland') {
+    router.push({ name: 'cleveland', query: { searchTerm: searchTerm.value } })
+  } else if (apiSelection.value === 'Discover') {
+    router.push({ name: 'discover', query: searchTerm.value ? { term: searchTerm.value } : {} })
   } else {
     router.push({ name: 'harvard art museums', query: { searchTerm: searchTerm.value } })
   }
@@ -87,6 +75,12 @@ watch(route, (newRoute) => {
     apiSelection.value = 'Harvard'
   } else if (newRoute.name === 'chicago art institute') {
     apiSelection.value = 'Chicago'
+  } else if (newRoute.name === 'smithsonian') {
+    apiSelection.value = 'Smithsonian'
+  } else if (newRoute.name === 'cleveland') {
+    apiSelection.value = 'Cleveland'
+  } else if (newRoute.name === 'discover') {
+    apiSelection.value = 'Discover'
   }
   // Add more conditions here for other routes
 })
@@ -103,7 +97,6 @@ watch(route, (newRoute) => {
             </div>
             <div class="hidden lg:ml-6 lg:block">
               <div class="flex space-x-4">
-                <!-- Current: "bg-zinc-900 text-white", Default: "text-zinc-300 hover:bg-zinc-700 hover:text-white" -->
                 <router-link
                   v-for="item in navItems"
                   :key="item.name"
@@ -111,6 +104,53 @@ watch(route, (newRoute) => {
                   class="rounded-md px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white"
                   active-class="bg-zinc-900 text-white"
                   >{{ item.name }}</router-link
+                >
+                <Menu as="div" class="relative">
+                  <MenuButton
+                    :class="[
+                      museumsActive ? 'bg-zinc-900 text-white' : 'text-zinc-300',
+                      'inline-flex items-center gap-x-1 rounded-md px-3 py-2 text-sm font-medium hover:bg-zinc-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800'
+                    ]"
+                  >
+                    Museums
+                    <ChevronDownIcon class="h-4 w-4" aria-hidden="true" />
+                  </MenuButton>
+
+                  <transition
+                    enter-active-class="transition ease-out duration-100"
+                    enter-from-class="transform opacity-0 scale-95"
+                    enter-to-class="transform opacity-100 scale-100"
+                    leave-active-class="transition ease-in duration-75"
+                    leave-from-class="transform opacity-100 scale-100"
+                    leave-to-class="transform opacity-0 scale-95"
+                  >
+                    <MenuItems
+                      class="absolute left-0 z-10 mt-2 w-64 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                    >
+                      <MenuItem
+                        v-for="item in museumItems"
+                        :key="item.name"
+                        v-slot="{ active }"
+                      >
+                        <router-link
+                          :to="item.href"
+                          :class="[
+                            active ? 'bg-zinc-100' : '',
+                            route.name === item.routeName ? 'font-semibold text-zinc-900' : 'text-zinc-700',
+                            'block px-4 py-2 text-sm'
+                          ]"
+                        >
+                          {{ item.name }}
+                        </router-link>
+                      </MenuItem>
+                    </MenuItems>
+                  </transition>
+                </Menu>
+                <router-link
+                  to="/about"
+                  class="rounded-md px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white"
+                  active-class="bg-zinc-900 text-white"
+                  >About</router-link
                 >
               </div>
             </div>
@@ -142,6 +182,9 @@ watch(route, (newRoute) => {
                   >
                     <option>Harvard</option>
                     <option>Chicago</option>
+                    <option>Smithsonian</option>
+                    <option>Cleveland</option>
+                    <option>Discover</option>
                   </select>
                 </div>
               </div>
@@ -238,6 +281,27 @@ watch(route, (newRoute) => {
             active-class="bg-zinc-900 text-white"
           >
             {{ item.name }}
+          </router-link>
+          <div class="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            Museums
+          </div>
+          <router-link
+            @click="close"
+            v-for="item in museumItems"
+            :key="item.name"
+            :to="item.href"
+            class="block rounded-md px-6 py-2 text-base font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white"
+            active-class="bg-zinc-900 text-white"
+          >
+            {{ item.name }}
+          </router-link>
+          <router-link
+            @click="close"
+            to="/about"
+            class="block rounded-md px-3 py-2 text-base font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white"
+            active-class="bg-zinc-900 text-white"
+          >
+            About
           </router-link>
         </div>
         <div v-show="userLoggedIn" class="border-t border-zinc-700 pb-3 pt-4">
